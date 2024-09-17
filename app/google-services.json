@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "1041376138325",
+    "firebase_url": "https://the-ist-job-portal-default-rtdb.firebaseio.com",
+    "project_id": "the-ist-job-portal",
+    "storage_bucket": "the-ist-job-portal.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1041376138325:android:8061e53c436956194730dc",
+        "android_client_info": {
+          "package_name": "com.example.istalumniapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCJg54wBOwRb_z4HdGN8sDixtX3fU3FP44"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
