@@ -75,9 +75,10 @@ import androidx.compose.ui.zIndex
 import coil.compose.rememberAsyncImagePainter
 import com.example.istalumniapp.R
 import com.example.istalumniapp.nav.Screens
+import com.example.istalumniapp.utils.ProfileViewModel
 
 @Composable
-fun CreateProfileScreen(navController: NavController, sharedViewModel: SharedViewModel) {
+fun CreateProfileScreen(navController: NavController, profileViewModel: ProfileViewModel) {
     var fullName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
@@ -104,7 +105,7 @@ fun CreateProfileScreen(navController: NavController, sharedViewModel: SharedVie
 
     // Safe state update using LaunchedEffect
     LaunchedEffect(Unit) {
-        sharedViewModel.retrieveSkills(
+        profileViewModel.retrieveSkills(
             onLoading = { skillsLoading = it },
             onSuccess = { skills = it },
             onFailure = { skillsError = it }
@@ -250,19 +251,11 @@ fun CreateProfileScreen(navController: NavController, sharedViewModel: SharedVie
                             )
 
                             // Save profile and handle success and error cases
-                            sharedViewModel.saveAlumniProfile(
+                            profileViewModel.saveAlumniProfile(
                                 alumniProfileData = alumniProfileData,
                                 profilePhotoUri = profilePhotoUri,
                                 context = context,
                                 navController = navController, // Pass the NavController here
-                                onComplete = {
-                                    loading = false // Set loading to false after completion
-                                    navController.navigate(Screens.ViewProfileScreen.route)
-                                },
-                                onError = { error ->
-                                    loading = false
-                                    errorMessage = error // Display error message
-                                }
                             )
 
                         }

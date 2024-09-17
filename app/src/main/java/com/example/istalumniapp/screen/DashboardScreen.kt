@@ -134,7 +134,7 @@ fun AdminTopBar(navController: NavController, onLogoutClick: () -> Unit) {
         modifier = Modifier.background(MaterialTheme.colorScheme.onPrimary),
         title = { Text("Admin Dashboard") },
         navigationIcon = {
-            IconButton(onClick = { navController.navigate(Screens.ViewProfileScreen.route) }) {
+            IconButton(onClick = { navController.navigate(Screens.ViewAlumniProfilesScreen.route) }) {
                 Icon(Icons.Default.Person, contentDescription = "Profile")
             }
         },
@@ -279,7 +279,7 @@ fun DashboardTopBar(navController: NavController, userRole: String?, onLogoutCli
                         modifier = Modifier.size(40.dp)
                     )
                 }
-                IconButton(onClick = { /* TODO: Handle Manage Users */ }) {
+                IconButton(onClick = { navController.navigate(Screens.ViewAlumniProfilesScreen.route) }) {
                     Icon(
                         Icons.Filled.Person,
                         contentDescription = "Manage Users",

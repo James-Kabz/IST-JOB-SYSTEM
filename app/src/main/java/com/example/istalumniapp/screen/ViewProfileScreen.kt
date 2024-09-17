@@ -25,17 +25,18 @@ import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.example.istalumniapp.R
 import com.example.istalumniapp.utils.AlumniProfileData
+import com.example.istalumniapp.utils.ProfileViewModel
 import com.example.istalumniapp.utils.SharedViewModel
 
 @Composable
-fun ViewProfileScreen(navController: NavController, sharedViewModel: SharedViewModel) {
+fun ViewProfileScreen(navController: NavController, profileViewModel: ProfileViewModel) {
     val context = LocalContext.current
     val profileData = remember { mutableStateOf<AlumniProfileData?>(null) }
     val loading = remember { mutableStateOf(true) }
     val errorMessage = remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
-        sharedViewModel.retrieveCurrentUserProfile(
+        profileViewModel.retrieveCurrentUserProfile(
             onLoading = { loading.value = it },
             onSuccess = { profile ->
                 profileData.value = profile
