@@ -12,6 +12,7 @@ import com.example.istalumniapp.screen.DisplayJobScreen
 import com.example.istalumniapp.screen.ForgotPasswordScreen
 import com.example.istalumniapp.screen.ISTLoginScreen
 import com.example.istalumniapp.screen.ISTRegisterScreen
+import com.example.istalumniapp.screen.ViewAlumniProfilesScreen
 import com.example.istalumniapp.screen.ViewProfileScreen
 import com.example.istalumniapp.utils.ProfileViewModel
 import com.example.istalumniapp.utils.SharedViewModel
@@ -29,6 +30,12 @@ fun NavGraph(
     ) {
 
 //        view profile
+        composable(
+            route = Screens.ViewAlumniProfilesScreen.route
+        ){
+            ViewAlumniProfilesScreen(navController = navController ,profileViewModel = profileViewModel)
+        }
+        //        view profile
         composable(
             route = Screens.ViewProfileScreen.route
         ){

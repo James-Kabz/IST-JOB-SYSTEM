@@ -1,13 +1,18 @@
 package com.example.istalumniapp.screen
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -17,6 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -39,7 +45,6 @@ fun ViewProfileScreen(navController: NavController, profileViewModel: ProfileVie
     val isProfileLoaded = remember { mutableStateOf(false) }
     val errorMessage = remember { mutableStateOf<String?>(null) }
 
-
     // Fetch the profile photo separately
     LaunchedEffect(Unit) {
         profileViewModel.retrieveProfilePhoto(
@@ -55,10 +60,10 @@ fun ViewProfileScreen(navController: NavController, profileViewModel: ProfileVie
         )
     }
 
-
     // Fetch the profile data
     LaunchedEffect(Unit) {
         profileViewModel.retrieveCurrentUserProfile(
+            context = context,
             onLoading = { loading.value = it },
             onSuccess = { profile ->
                 profileData.value = profile
@@ -75,63 +80,78 @@ fun ViewProfileScreen(navController: NavController, profileViewModel: ProfileVie
         )
     }
 
-
-
     // Main Layout
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
-        contentAlignment = Alignment.Center
+            .padding(20.dp)
     ) {
-        when {
-            loading.value -> {
-                // Show loading indicator
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    CircularProgressIndicator(
-                        color = MaterialTheme.colorScheme.primary,
-                        strokeWidth = 4.dp,
-                        modifier = Modifier.size(48.dp)
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
+        // Add back button
+        IconButton(onClick = { navController.popBackStack() }) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Back",
+                tint = MaterialTheme.colorScheme.onBackground
+            )
+        }
+
+        // Main content
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(1.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            when {
+                loading.value -> {
+                    // Show loading indicator
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                        modifier = Modifier.padding(16.dp)
+                    ) {
+                        CircularProgressIndicator(
+                            color = MaterialTheme.colorScheme.primary,
+                            strokeWidth = 4.dp,
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Please wait...",
+                            color = MaterialTheme.colorScheme.onBackground,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+                errorMessage.value != null -> {
+                    // Show error message
                     Text(
-                        text = "Please wait...",
-                        color = MaterialTheme.colorScheme.onBackground,
-                        style = MaterialTheme.typography.bodyMedium
+                        text = "Error: ${errorMessage.value}",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(16.dp)
                     )
                 }
-            }
-            errorMessage.value != null -> {
-                // Show error message
-                Text(
-                    text = "Error: ${errorMessage.value}",
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
-            isProfileLoaded.value && profileData.value == null -> {
-                // Show "No profile data available" only after loading is complete
-                Text(
-                    text = "No profile data available.",
-                    color = MaterialTheme.colorScheme.onBackground,
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
-            else -> {
-                // Show the profile details
-                profileData.value?.let { profile ->
-                    ProfileDetails(profile, profilePhotoUrl.value)
+                isProfileLoaded.value && profileData.value == null -> {
+                    // Show "No profile data available" only after loading is complete
+                    Text(
+                        text = "No profile data available.",
+                        color = MaterialTheme.colorScheme.onBackground,
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+                else -> {
+                    // Show the profile details
+                    profileData.value?.let { profile ->
+                        ProfileDetails(profile, profilePhotoUrl.value)
+                    }
                 }
             }
         }
     }
 }
+
 
 @Composable
 fun ProfileDetails(profile: AlumniProfileData, value: String?) {
@@ -142,6 +162,7 @@ fun ProfileDetails(profile: AlumniProfileData, value: String?) {
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+
         // Header Section
         Box(
             modifier = Modifier
@@ -149,7 +170,7 @@ fun ProfileDetails(profile: AlumniProfileData, value: String?) {
                 .padding(bottom = 24.dp),
             contentAlignment = Alignment.Center
         ) {
-//            ProfileImage(profile.profilePhotoUri ?: "")
+
             ProfileImage(profile.profilePhotoUri ?: "")
         }
 
@@ -215,7 +236,7 @@ fun ContactInfoSection(profile: AlumniProfileData) {
             InfoRow(Icons.Default.Phone, "Phone", profile.phone)
         }
         if (profile.linkedIn.isNotBlank()) {
-            InfoRow(Icons.Default.Info, "LinkedIn", profile.linkedIn)
+            LinkedInRow(profile.linkedIn)
         }
     }
 }
@@ -231,6 +252,44 @@ fun EducationSection(profile: AlumniProfileData) {
         InfoRow(Icons.Default.DateRange, "Graduation Year", profile.graduationYear)
         if (profile.extraCourse.isNotBlank()) {
             InfoRow(Icons.Default.Add, "Extra Course", profile.extraCourse)
+        }
+    }
+}
+
+
+@Composable
+fun LinkedInRow(linkedInUrl: String) {
+    val context = LocalContext.current
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .padding(vertical = 8.dp)
+            .clickable {
+                // Open LinkedIn URL in browser
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(linkedInUrl))
+                context.startActivity(intent)
+            }
+    ) {
+        // Replace with your LinkedIn icon drawable
+        Icon(
+            painter = painterResource(id = R.drawable.icons8_linkedin_48), // Your LinkedIn icon
+            contentDescription = "LinkedIn",
+            tint = Color.Unspecified, // Make sure the icon shows original colors
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Column {
+            Text(
+                text = "LinkedIn",
+                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                color = Color.Gray
+            )
+//            Text(
+//                text = linkedInUrl,
+//                style = MaterialTheme.typography.bodyMedium,
+//                color = MaterialTheme.colorScheme.primary // You can also make the text appear clickable
+//            )
         }
     }
 }

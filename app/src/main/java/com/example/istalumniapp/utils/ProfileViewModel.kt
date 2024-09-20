@@ -17,9 +17,27 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.StateFlow
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.os.Build
+
 
 
 class ProfileViewModel :ViewModel()  {
+
+
+    private fun isInternetAvailable(context: Context): Boolean {
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val networkCapabilities = connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork)
+            networkCapabilities != null && networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+        } else {
+            @Suppress("DEPRECATION")
+            connectivityManager.activeNetworkInfo?.isConnected == true
+        }
+    }
+
 
 
     private val firestore = FirebaseFirestore.getInstance()
@@ -28,6 +46,43 @@ class ProfileViewModel :ViewModel()  {
 
     private var lastRequestTime = 0L
     private val requestInterval = 5000L // 5 seconds
+
+    private val _alumniProfiles = MutableStateFlow<List<AlumniProfileData>>(emptyList())
+    val alumniProfiles: StateFlow<List<AlumniProfileData>> = _alumniProfiles
+
+    private val _loading = MutableStateFlow(true)
+    val loading: StateFlow<Boolean> = _loading
+
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage
+
+    fun retrieveAlumniProfiles(context: Context) {
+        viewModelScope.launch(Dispatchers.IO) {
+            if (!isInternetAvailable(context)) {
+                withContext(Dispatchers.Main) {
+                    _loading.value = false
+                    _errorMessage.value = "No internet connection."
+                }
+                return@launch
+            }
+            _loading.value = true
+            try {
+                val firestoreRef = firestore.collection("alumniProfiles")
+                val result = firestoreRef.get().await()
+                val profiles = result.mapNotNull { it.toObject(AlumniProfileData::class.java) }
+                withContext(Dispatchers.Main) {
+                    _loading.value = false
+                    _alumniProfiles.value = profiles
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    _loading.value = false
+                    _errorMessage.value = "Error fetching profiles: ${e.message}"
+                }
+            }
+        }
+    }
+
 
     init {
         fetchUserRole()
@@ -95,10 +150,18 @@ class ProfileViewModel :ViewModel()  {
     }
 
     fun retrieveCurrentUserProfile(
+        context: Context,
         onLoading: (Boolean) -> Unit,
         onSuccess: (AlumniProfileData?) -> Unit,
         onFailure: (String) -> Unit
     ) = viewModelScope.launch(Dispatchers.IO) {
+        if (!isInternetAvailable(context)) {
+            withContext(Dispatchers.Main) {
+                onLoading(false)
+                onFailure("No internet connection.")
+            }
+            return@launch
+        }
         val currentTime = System.currentTimeMillis()
         if (currentTime - lastRequestTime < requestInterval) {
             withContext(Dispatchers.Main) {
@@ -193,27 +256,27 @@ class ProfileViewModel :ViewModel()  {
         return storageRef.downloadUrl.await().toString()
     }
 
-    fun retrieveAlumniProfiles(
-        onLoading: (Boolean) -> Unit,
-        onSuccess: (List<AlumniProfileData>) -> Unit,
-        onFailure: (String) -> Unit
-    ) = viewModelScope.launch(Dispatchers.IO) {
-        onLoading(true)
-        try {
-            val firestoreRef = firestore.collection("alumniProfiles")
-            val result = firestoreRef.get().await()
-            val profiles = result.mapNotNull { it.toObject(AlumniProfileData::class.java) }
-            withContext(Dispatchers.Main) {
-                onLoading(false)
-                onSuccess(profiles)
-            }
-        } catch (e: Exception) {
-            withContext(Dispatchers.Main) {
-                onLoading(false)
-                onFailure("Error fetching profiles: ${e.message}")
-            }
-        }
-    }
+//    fun retrieveAlumniProfiles(
+//        onLoading: (Boolean) -> Unit,
+//        onSuccess: (List<AlumniProfileData>) -> Unit,
+//        onFailure: (String) -> Unit
+//    ) = viewModelScope.launch(Dispatchers.IO) {
+//        onLoading(true)
+//        try {
+//            val firestoreRef = firestore.collection("alumniProfiles")
+//            val result = firestoreRef.get().await()
+//            val profiles = result.mapNotNull { it.toObject(AlumniProfileData::class.java) }
+//            withContext(Dispatchers.Main) {
+//                onLoading(false)
+//                onSuccess(profiles)
+//            }
+//        } catch (e: Exception) {
+//            withContext(Dispatchers.Main) {
+//                onLoading(false)
+//                onFailure("Error fetching profiles: ${e.message}")
+//            }
+//        }
+//    }
 
     fun retrieveSkills(
         onLoading: (Boolean) -> Unit,

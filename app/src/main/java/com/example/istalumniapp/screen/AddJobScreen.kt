@@ -1,6 +1,7 @@
 package com.example.istalumniapp.screen
 
 
+import android.app.DatePickerDialog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -35,6 +37,9 @@ import com.example.istalumniapp.utils.JobData
 import com.example.istalumniapp.utils.JobType
 import com.example.istalumniapp.utils.SharedViewModel
 import com.example.istalumniapp.utils.SkillData
+import java.text.DateFormat
+import java.util.Calendar
+import java.util.Date
 import java.util.UUID
 
 @Composable
@@ -59,8 +64,27 @@ fun AddJobScreen(navController: NavController, sharedViewModel: SharedViewModel)
     var skillsError by remember { mutableStateOf("") }
     var skillsExpanded by remember { mutableStateOf(false) }
 
-
     val context = LocalContext.current
+
+    // New deadlineDate state for selecting the deadline date
+    var deadlineDate by remember { mutableStateOf<Date?>(null) }
+    val deadlineDateFormatted = deadlineDate?.let { DateFormat.getDateInstance().format(it) } ?: "Select Deadline Date"
+
+    // DatePickerDialog to pick the deadline date
+    val calendar = Calendar.getInstance()
+    val year = calendar.get(Calendar.YEAR)
+    val month = calendar.get(Calendar.MONTH)
+    val day = calendar.get(Calendar.DAY_OF_MONTH)
+
+    val datePickerDialog = DatePickerDialog(
+        context,
+        { _, selectedYear, selectedMonth, selectedDay ->
+            calendar.set(selectedYear, selectedMonth, selectedDay)
+            deadlineDate = calendar.time
+        }, year, month, day
+    )
+
+
 
     // State to manage current step
     var currentStep by remember { mutableIntStateOf(1) }
@@ -172,6 +196,8 @@ fun AddJobScreen(navController: NavController, sharedViewModel: SharedViewModel)
                 onSkillDeselected = { selectedSkills = selectedSkills - it },
                 skills = skills,
                 expanded = skillsExpanded,
+                deadlineDateFormatted = deadlineDateFormatted,
+                onDeadlineDateClick = { datePickerDialog.show() },
                 onExpandedChange = { skillsExpanded = it },
                 onPrevious = { currentStep = 4 },
                 onSubmit = {
@@ -191,7 +217,8 @@ fun AddJobScreen(navController: NavController, sharedViewModel: SharedViewModel)
                             experienceLevel = experienceLevel,
                             educationLevel = educationLevel,
                             companyLogo = companyLogo,
-                            skills = selectedSkills // Add selected skills to job data
+                            skills = selectedSkills, // Add selected skills to job data
+                            deadlineDate = deadlineDate
                         )
                         sharedViewModel.saveJob(jobData = jobData, context = context)
                         navController.popBackStack() // Go back after submitting
@@ -431,6 +458,8 @@ fun StepFive(
     onSkillDeselected: (String) -> Unit,
     skills: List<SkillData>,
     expanded: Boolean,
+    deadlineDateFormatted: String,
+    onDeadlineDateClick: () -> Unit,
     onExpandedChange: (Boolean) -> Unit,
     onPrevious: () -> Unit,
     onSubmit: () -> Unit
@@ -443,6 +472,23 @@ fun StepFive(
         verticalArrangement = Arrangement.Top
     ) {
         Text(text = "Step 5", fontSize = 24.sp)
+
+        // Deadline Date Selector
+        OutlinedTextField(
+            value = deadlineDateFormatted,
+            onValueChange = {},
+            label = { Text("Deadline Date") },
+            readOnly = true,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            trailingIcon = {
+                IconButton(onClick = onDeadlineDateClick) {
+                    Icon(Icons.Default.DateRange, contentDescription = "Select Deadline Date")
+                }
+            }
+        )
+
         // Skill Selection
         SkillSelection(
             selectedSkills = selectedSkills,
