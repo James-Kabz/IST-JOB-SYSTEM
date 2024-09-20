@@ -1,7 +1,10 @@
 package com.example.istalumniapp.screen
 
+import android.util.Log
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.*
@@ -9,26 +12,39 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import coil.compose.rememberAsyncImagePainter
+import coil.compose.rememberImagePainter
 import com.example.istalumniapp.nav.Screens
+import com.example.istalumniapp.utils.ProfileViewModel
 import com.example.istalumniapp.utils.SharedViewModel
 import com.google.firebase.auth.FirebaseAuth
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DashboardScreen(navController: NavController, sharedViewModel: SharedViewModel = viewModel()) {
+fun DashboardScreen(navController: NavController,profileViewModel: ProfileViewModel, sharedViewModel: SharedViewModel = viewModel()) {
     // Observe the user role from the ViewModel
     val userRole by sharedViewModel.userRole.collectAsState()
-
+    var profilePhotoUrl by remember { mutableStateOf<String?>(null) }
     // Variable to show logout confirmation dialog
     var showLogoutConfirmation by remember { mutableStateOf(false) }
-
+    val context = LocalContext.current
+    var isLoading by remember { mutableStateOf(false) }
     // Fetch user role when the composable is launched
     LaunchedEffect(Unit) {
         sharedViewModel.fetchUserRole()
+
+        profileViewModel.retrieveProfilePhoto(
+            onLoading = { loading -> isLoading = loading },
+            onSuccess = { url -> profilePhotoUrl = url.toString() },
+            onFailure = { message -> Log.e("DisplayJobScreen", "Error fetching profile photo: $message") }
+        )
     }
 
     // Check if the userRole is null, meaning it's still loading
@@ -58,6 +74,7 @@ fun DashboardScreen(navController: NavController, sharedViewModel: SharedViewMod
                 DashboardTopBar(
                     navController = navController,
                     userRole = userRole,  // Pass the user role to DashboardTopBar
+                    profilePhotoUrl = profilePhotoUrl,
                     onLogoutClick = { showLogoutConfirmation = true }
                 )
             },
@@ -150,16 +167,36 @@ fun AdminTopBar(navController: NavController, onLogoutClick: () -> Unit) {
         }
     )
 }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AlumniTopBar(navController: NavController, onLogoutClick: () -> Unit) {
+fun AlumniTopBar(
+    navController: NavController,
+    onLogoutClick: () -> Unit,
+    profilePhotoUrl: String?
+) {
     TopAppBar(
-        modifier = Modifier.background(MaterialTheme.colorScheme.onPrimary),
-        title = { Text("Alumni Dashboard") },
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Alumni Dashboard")
+            }
+        },
         navigationIcon = {
             IconButton(onClick = { navController.navigate(Screens.ViewProfileScreen.route) }) {
-                Icon(Icons.Default.Person, contentDescription = "Profile")
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (profilePhotoUrl != null) {
+                        Image(
+                            painter = rememberAsyncImagePainter(profilePhotoUrl),
+                            contentDescription = "Profile Photo",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .size(30.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.surface)
+                        )
+                    }
+                }
             }
         },
         actions = {
@@ -178,9 +215,9 @@ fun AlumniTopBar(navController: NavController, onLogoutClick: () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DashboardTopBar(navController: NavController, userRole: String?, onLogoutClick: () -> Unit) {
+fun DashboardTopBar(navController: NavController, userRole: String?, onLogoutClick: () -> Unit,profilePhotoUrl: String?) {
     when (userRole) {
-        "alumni" -> AlumniTopBar(navController = navController, onLogoutClick = onLogoutClick)
+        "alumni" -> AlumniTopBar(navController = navController, onLogoutClick = onLogoutClick,profilePhotoUrl)
         "admin" -> AdminTopBar(navController = navController, onLogoutClick = onLogoutClick)
 //        else -> DefaultTopBar(navController = navController, onLogoutClick = onLogoutClick) // If needed, provide a default top bar
     }

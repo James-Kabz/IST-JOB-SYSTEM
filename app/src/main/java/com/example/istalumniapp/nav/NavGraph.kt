@@ -13,13 +13,15 @@ import com.example.istalumniapp.screen.ForgotPasswordScreen
 import com.example.istalumniapp.screen.ISTLoginScreen
 import com.example.istalumniapp.screen.ISTRegisterScreen
 import com.example.istalumniapp.screen.ViewProfileScreen
+import com.example.istalumniapp.utils.ProfileViewModel
 import com.example.istalumniapp.utils.SharedViewModel
 
 
 @Composable
 fun NavGraph(
     navController: NavHostController,
-    sharedViewModel: SharedViewModel
+    sharedViewModel: SharedViewModel,
+    profileViewModel: ProfileViewModel
 ) {
     NavHost(
         navController = navController,
@@ -30,13 +32,13 @@ fun NavGraph(
         composable(
             route = Screens.ViewProfileScreen.route
         ){
-            ViewProfileScreen(navController = navController ,sharedViewModel = sharedViewModel)
+            ViewProfileScreen(navController = navController ,profileViewModel = profileViewModel)
         }
 //      create  profile
         composable(
             route = Screens.CreateProfileScreen.route
         ) {
-            CreateProfileScreen(navController = navController, sharedViewModel = sharedViewModel)
+            CreateProfileScreen(navController = navController,profileViewModel = profileViewModel)
         }
 
 //        add job screen
@@ -49,7 +51,7 @@ fun NavGraph(
         composable(
             route = Screens.DisplayJobScreen.route
         ) {
-            DisplayJobScreen(navController = navController, sharedViewModel = sharedViewModel)
+            DisplayJobScreen(navController = navController, sharedViewModel = sharedViewModel,profileViewModel = profileViewModel)
         }
 //        addSkills
         composable(
@@ -79,7 +81,7 @@ fun NavGraph(
         composable(
             route = Screens.DashboardScreen.route
         ) {
-            DashboardScreen(navController = navController)
+            DashboardScreen(navController = navController,profileViewModel =profileViewModel)
         }
 
 

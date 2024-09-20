@@ -24,31 +24,58 @@ import coil.annotation.ExperimentalCoilApi
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.example.istalumniapp.R
+import com.example.istalumniapp.nav.Screens
 import com.example.istalumniapp.utils.AlumniProfileData
-import com.example.istalumniapp.utils.SharedViewModel
+import com.example.istalumniapp.utils.ProfileViewModel
+
+
 
 @Composable
-fun ViewProfileScreen(navController: NavController, sharedViewModel: SharedViewModel) {
+fun ViewProfileScreen(navController: NavController, profileViewModel: ProfileViewModel) {
     val context = LocalContext.current
     val profileData = remember { mutableStateOf<AlumniProfileData?>(null) }
+    val profilePhotoUrl = remember { mutableStateOf<String?>(null) }
     val loading = remember { mutableStateOf(true) }
+    val isProfileLoaded = remember { mutableStateOf(false) }
     val errorMessage = remember { mutableStateOf<String?>(null) }
 
+
+    // Fetch the profile photo separately
     LaunchedEffect(Unit) {
-        sharedViewModel.retrieveCurrentUserProfile(
+        profileViewModel.retrieveProfilePhoto(
+            onLoading = { loading.value = it },
+            onSuccess = { url ->
+                profilePhotoUrl.value = url.toString()
+                Log.d("ViewProfileScreen", "Retrieved profile photo URL: $url")
+            },
+            onFailure = { error ->
+                errorMessage.value = error
+                Log.e("ViewProfileScreen", "Error retrieving profile photo: $error")
+            }
+        )
+    }
+
+
+    // Fetch the profile data
+    LaunchedEffect(Unit) {
+        profileViewModel.retrieveCurrentUserProfile(
             onLoading = { loading.value = it },
             onSuccess = { profile ->
                 profileData.value = profile
+                isProfileLoaded.value = true
                 if (profile != null) {
-                    Log.d("ViewProfileScreen", "Retrieved profile photo URI: ${profile.profilePhotoUri}")
+                    Log.d("ViewProfileScreen", "Retrieved profile data")
                 }
             },
             onFailure = { error ->
                 errorMessage.value = error
+                isProfileLoaded.value = true
                 Log.e("ViewProfileScreen", "Error retrieving profile: $error")
             }
         )
     }
+
+
 
     // Main Layout
     Box(
@@ -59,6 +86,7 @@ fun ViewProfileScreen(navController: NavController, sharedViewModel: SharedViewM
     ) {
         when {
             loading.value -> {
+                // Show loading indicator
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,
@@ -78,6 +106,7 @@ fun ViewProfileScreen(navController: NavController, sharedViewModel: SharedViewM
                 }
             }
             errorMessage.value != null -> {
+                // Show error message
                 Text(
                     text = "Error: ${errorMessage.value}",
                     color = MaterialTheme.colorScheme.error,
@@ -85,16 +114,19 @@ fun ViewProfileScreen(navController: NavController, sharedViewModel: SharedViewM
                     modifier = Modifier.padding(16.dp)
                 )
             }
+            isProfileLoaded.value && profileData.value == null -> {
+                // Show "No profile data available" only after loading is complete
+                Text(
+                    text = "No profile data available.",
+                    color = MaterialTheme.colorScheme.onBackground,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
             else -> {
+                // Show the profile details
                 profileData.value?.let { profile ->
-                    ProfileDetails(profile)
-                } ?: run {
-                    Text(
-                        text = "No profile data available.",
-                        color = MaterialTheme.colorScheme.onBackground,
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.padding(16.dp)
-                    )
+                    ProfileDetails(profile, profilePhotoUrl.value)
                 }
             }
         }
@@ -102,7 +134,7 @@ fun ViewProfileScreen(navController: NavController, sharedViewModel: SharedViewM
 }
 
 @Composable
-fun ProfileDetails(profile: AlumniProfileData) {
+fun ProfileDetails(profile: AlumniProfileData, value: String?) {
     Column(
         modifier = Modifier
             .padding(16.dp)
@@ -117,6 +149,7 @@ fun ProfileDetails(profile: AlumniProfileData) {
                 .padding(bottom = 24.dp),
             contentAlignment = Alignment.Center
         ) {
+//            ProfileImage(profile.profilePhotoUri ?: "")
             ProfileImage(profile.profilePhotoUri ?: "")
         }
 
@@ -245,17 +278,15 @@ fun InfoRow(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String
     }
 }
 
-@OptIn(ExperimentalCoilApi::class)
 @Composable
-fun ProfileImage(profile: String) {
+fun ProfileImage(profileUrl: String) {
+    // Load profile image with Coil, and handle empty URL case efficiently
     val painter = rememberAsyncImagePainter(
         ImageRequest.Builder(LocalContext.current)
-            .data(profile.ifBlank { R.drawable.placeholder })
-            .apply {
-                crossfade(true)
-                placeholder(R.drawable.placeholder)
-                error(R.drawable.error)
-            }
+            .data(profileUrl.ifBlank { R.drawable.placeholder }) // Handle empty URL properly
+            .crossfade(true)
+            .placeholder(R.drawable.placeholder)
+            .error(R.drawable.error)
             .build()
     )
 

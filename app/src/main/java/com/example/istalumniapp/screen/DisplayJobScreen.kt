@@ -1,5 +1,6 @@
 package com.example.istalumniapp.screen
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -23,6 +24,7 @@ import coil.annotation.ExperimentalCoilApi
 import coil.compose.rememberImagePainter
 import com.example.istalumniapp.nav.Screens
 import com.example.istalumniapp.utils.JobData
+import com.example.istalumniapp.utils.ProfileViewModel
 import com.example.istalumniapp.utils.SharedViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -32,14 +34,16 @@ import kotlinx.coroutines.tasks.await
 @Composable
 fun DisplayJobScreen(
     navController: NavController,
-    sharedViewModel: SharedViewModel
+    sharedViewModel: SharedViewModel,
+    profileViewModel: ProfileViewModel
 ) {
     var jobs by remember { mutableStateOf<List<JobData>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var userRole by remember { mutableStateOf<String?>(null) }
     var showLogoutConfirmation by remember { mutableStateOf(false) }
-
+    var profilePhotoUrl by remember { mutableStateOf<String?>(null) }
+    val loading = remember { mutableStateOf(true) }
     // Fetch user role
     LaunchedEffect(Unit) {
         val uid = FirebaseAuth.getInstance().currentUser?.uid
@@ -48,6 +52,13 @@ fun DisplayJobScreen(
             val documentSnapshot = db.collection("users").document(uid).get().await()
             userRole = documentSnapshot.getString("role") ?: "alumni"
         }
+
+        profileViewModel.retrieveProfilePhoto(
+            onLoading = { loading.value = it },
+            onSuccess = { url -> profilePhotoUrl = url },
+            onFailure = { message -> Log.e("DisplayJobScreen", "Error fetching profile photo: $message") }
+        )
+
     }
 
     // Fetch jobs
@@ -94,7 +105,7 @@ fun DisplayJobScreen(
         // Once jobs are loaded, show the full UI
         Scaffold(
             topBar = {
-                DashboardTopBar(navController = navController, onLogoutClick = { showLogoutConfirmation = true } , userRole = userRole )
+                DashboardTopBar(navController = navController, onLogoutClick = { showLogoutConfirmation = true } , userRole = userRole , profilePhotoUrl = profilePhotoUrl)
             },
             bottomBar = {
                 DashboardBottomBar(navController = navController, userRole = userRole)
@@ -108,8 +119,6 @@ fun DisplayJobScreen(
             ) {
                 when {
                     errorMessage != null -> {
-
-
                         // Show error message if fetching jobs fails
                         Box(
                             modifier = Modifier.fillMaxSize(),
@@ -121,15 +130,6 @@ fun DisplayJobScreen(
 
                     jobs.isEmpty() -> {
                         // Show message if no jobs are available
-                        Row() {
-                            Button(onClick = {navController.navigate(Screens.AddJobScreen.route)}) {
-                                Text(text = "Add Job")
-                            }
-                            Spacer(modifier = Modifier.width(20.dp))
-                            Button(onClick = {navController.navigate(Screens.AddSkillScreen.route)}) {
-                                Text(text = "Add Skill")
-                            }
-                        }
                         Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center

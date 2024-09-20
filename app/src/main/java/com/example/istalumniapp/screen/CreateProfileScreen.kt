@@ -75,9 +75,10 @@ import androidx.compose.ui.zIndex
 import coil.compose.rememberAsyncImagePainter
 import com.example.istalumniapp.R
 import com.example.istalumniapp.nav.Screens
+import com.example.istalumniapp.utils.ProfileViewModel
 
 @Composable
-fun CreateProfileScreen(navController: NavController, sharedViewModel: SharedViewModel) {
+fun CreateProfileScreen(navController: NavController, profileViewModel: ProfileViewModel) {
     var fullName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
@@ -102,9 +103,17 @@ fun CreateProfileScreen(navController: NavController, sharedViewModel: SharedVie
     var loading by remember { mutableStateOf(false) } // Loading state
 
 
+    // Fetch saved email using LaunchedEffect when the screen loads
+    LaunchedEffect(Unit) {
+        val savedEmail = getEmail(context)
+        if (savedEmail != null) {
+            email = savedEmail
+        }
+    }
+
     // Safe state update using LaunchedEffect
     LaunchedEffect(Unit) {
-        sharedViewModel.retrieveSkills(
+        profileViewModel.retrieveSkills(
             onLoading = { skillsLoading = it },
             onSuccess = { skills = it },
             onFailure = { skillsError = it }
@@ -121,13 +130,16 @@ fun CreateProfileScreen(navController: NavController, sharedViewModel: SharedVie
 
     // If loading is true, show a blank screen with the loading indicator
     if (loading) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            CircularProgressIndicator(
-                color = Color.Blue, // Customize the color
-                strokeWidth = 4.dp
+            CircularProgressIndicator(color = colorScheme.primary)
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Please wait as we create your profile...",
+                color = colorScheme.onBackground,
+                style = MaterialTheme.typography.bodyMedium
             )
         }
     } else {
@@ -250,14 +262,14 @@ fun CreateProfileScreen(navController: NavController, sharedViewModel: SharedVie
                             )
 
                             // Save profile and handle success and error cases
-                            sharedViewModel.saveAlumniProfile(
+                            profileViewModel.saveAlumniProfile(
                                 alumniProfileData = alumniProfileData,
                                 profilePhotoUri = profilePhotoUri,
                                 context = context,
                                 navController = navController, // Pass the NavController here
                                 onComplete = {
                                     loading = false // Set loading to false after completion
-                                    navController.navigate(Screens.ViewProfileScreen.route)
+                                    navController.navigate(Screens.DashboardScreen.route)
                                 },
                                 onError = { error ->
                                     loading = false
@@ -360,6 +372,7 @@ fun ProcedureOne(
                 keyboardType = KeyboardType.Email,
                 imeAction = ImeAction.Next
             ),
+            readOnly = true,
             isError = email.isBlank()
         )
 

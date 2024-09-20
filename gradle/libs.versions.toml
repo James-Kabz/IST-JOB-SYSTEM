@@ -2,6 +2,7 @@
 accompanistCoil = "0.15.0"
 agp = "8.5.0"
 coilCompose = "2.4.0"
+datastorePreferences = "1.1.1"
 firebaseBom = "33.3.0"
 kotlin = "1.9.0"
 coreKtx = "1.13.1"
@@ -21,10 +22,12 @@ supportAnnotations = "28.0.0"
 navigationCompose = "2.8.0"
 uiAndroid = "1.7.1"
 uiTextGoogleFonts = "1.7.1"
+firebaseAppcheckDebug = "18.0.0"
 
 [libraries]
 accompanist-coil = { module = "com.google.accompanist:accompanist-coil", version.ref = "accompanistCoil" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferences" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" }
 firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
@@ -51,6 +54,7 @@ support-annotations = { group = "com.android.support", name = "support-annotatio
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 androidx-ui-android = { group = "androidx.compose.ui", name = "ui-android", version.ref = "uiAndroid" }
 androidx-ui-text-google-fonts = { group = "androidx.compose.ui", name = "ui-text-google-fonts", version.ref = "uiTextGoogleFonts" }
+firebase-appcheck-debug = { group = "com.google.firebase", name = "firebase-appcheck-debug", version.ref = "firebaseAppcheckDebug" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
