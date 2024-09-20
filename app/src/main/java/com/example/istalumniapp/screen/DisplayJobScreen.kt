@@ -1,5 +1,6 @@
 package com.example.istalumniapp.screen
 
+import android.annotation.SuppressLint
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -16,12 +17,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.annotation.ExperimentalCoilApi
+import coil.compose.rememberAsyncImagePainter
 import coil.compose.rememberImagePainter
+import coil.request.ImageRequest
 import com.example.istalumniapp.nav.Screens
 import com.example.istalumniapp.utils.JobData
 import com.example.istalumniapp.utils.ProfileViewModel
@@ -29,6 +33,8 @@ import com.example.istalumniapp.utils.SharedViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
+import java.time.LocalDate
+import java.time.ZoneId
 
 
 @Composable
@@ -44,6 +50,7 @@ fun DisplayJobScreen(
     var showLogoutConfirmation by remember { mutableStateOf(false) }
     var profilePhotoUrl by remember { mutableStateOf<String?>(null) }
     val loading = remember { mutableStateOf(true) }
+
     // Fetch user role
     LaunchedEffect(Unit) {
         val uid = FirebaseAuth.getInstance().currentUser?.uid
@@ -58,7 +65,6 @@ fun DisplayJobScreen(
             onSuccess = { url -> profilePhotoUrl = url },
             onFailure = { message -> Log.e("DisplayJobScreen", "Error fetching profile photo: $message") }
         )
-
     }
 
     // Fetch jobs
@@ -105,7 +111,12 @@ fun DisplayJobScreen(
         // Once jobs are loaded, show the full UI
         Scaffold(
             topBar = {
-                DashboardTopBar(navController = navController, onLogoutClick = { showLogoutConfirmation = true } , userRole = userRole , profilePhotoUrl = profilePhotoUrl)
+                DashboardTopBar(
+                    navController = navController,
+                    onLogoutClick = { showLogoutConfirmation = true },
+                    userRole = userRole,
+                    profilePhotoUrl = profilePhotoUrl
+                )
             },
             bottomBar = {
                 DashboardBottomBar(navController = navController, userRole = userRole)
@@ -117,6 +128,7 @@ fun DisplayJobScreen(
                     .padding(paddingValues),
                 contentAlignment = Alignment.TopCenter
             ) {
+
                 when {
                     errorMessage != null -> {
                         // Show error message if fetching jobs fails
@@ -129,7 +141,20 @@ fun DisplayJobScreen(
                     }
 
                     jobs.isEmpty() -> {
-                        // Show message if no jobs are available
+                        // Conditionally show the "Add Job" and "Add Skill" buttons if the user is an admin
+                        if (userRole == "admin") {
+                            Row(
+                            ) {
+                                Button(onClick = { navController.navigate(Screens.AddJobScreen.route) }) {
+                                    Text(text = "Add Job")
+                                }
+
+                                Button(onClick = { navController.navigate(Screens.AddSkillScreen.route) }) {
+                                    Text(text = "Add Skill")
+                                }
+                            }
+                        }
+
                         Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
@@ -144,15 +169,35 @@ fun DisplayJobScreen(
                     }
 
                     else -> {
+
                         // Display the list of jobs once they are loaded
                         LazyColumn(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(5.dp),
-                            verticalArrangement = Arrangement.spacedBy(20.dp)
+                                .padding(10.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
+
                             items(jobs) { job ->
-                                JobItem(job = job)
+                                // Conditionally show the "Add Job" and "Add Skill" buttons if the user is an admin
+                                if (userRole == "admin") {
+                                    Row(
+                                    horizontalArrangement = Arrangement.Center, // Center the Row's content
+                                    modifier = Modifier
+                                        .fillMaxWidth() // Ensure the Row takes up the full width
+                                ) {
+                                    Button(onClick = { navController.navigate(Screens.AddJobScreen.route) }) {
+                                        Text(text = "Add Job")
+                                    }
+                                    Spacer(modifier = Modifier.width(8.dp)) // Space between buttons
+                                    Button(onClick = { navController.navigate(Screens.AddSkillScreen.route) }) {
+                                        Text(text = "Add Skill")
+                                    }
+                                }
+                                    Spacer(modifier = Modifier.height(16.dp)) // Space below the buttons
+                                }
+                                // Pass the userRole to the JobItem composable
+                                JobItem(job = job, userRole = userRole ?: "", navController = navController)
                             }
                         }
                     }
@@ -191,10 +236,21 @@ fun LogoutConfirm(onConfirm: () -> Unit, onDismiss: () -> Unit) {
 }
 
 
-
+@SuppressLint("NewApi")
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalCoilApi::class)
 @Composable
-fun JobItem(job: JobData) {
+fun JobItem(job: JobData, userRole: String, navController: NavController) {
+    val currentDate = LocalDate.now() // Get the current date
+    val deadlineDate = job.deadlineDate?.toInstant()?.atZone(ZoneId.systemDefault())?.toLocalDate()
+
+    // Debugging: Log the currentDate and deadlineDate values
+    Log.d("JobItem", "Current Date: $currentDate, Deadline Date: $deadlineDate")
+
+    val isBeforeDeadline = deadlineDate != null && !currentDate.isAfter(deadlineDate)
+
+    // Log the result of the condition
+    Log.d("JobItem", "Is Before Deadline: $isBeforeDeadline")
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -204,16 +260,17 @@ fun JobItem(job: JobData) {
         ),
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
+
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(10.dp)
         ) {
             // Company Logo
             if (job.companyLogo.isNotEmpty()) {
-                val painter = rememberImagePainter(
-                    data = job.companyLogo,
-                    builder = {
-                        crossfade(true)
-                    }
+                val painter = rememberAsyncImagePainter(
+                    ImageRequest.Builder(LocalContext.current).data(data = job.companyLogo)
+                        .apply(block = fun ImageRequest.Builder.() {
+                            crossfade(true)
+                        }).build()
                 )
                 Image(
                     painter = painter,
@@ -239,6 +296,13 @@ fun JobItem(job: JobData) {
             Text(
                 text = "Description",
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = "Deadline: ${deadlineDate?.toString() ?: "N/A"}",
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(4.dp))
@@ -327,8 +391,7 @@ fun JobItem(job: JobData) {
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Column(
-                    modifier = Modifier
-                        .fillMaxSize()
+                    modifier = Modifier.fillMaxSize()
                 ) {
                     job.skills.forEach { skill ->
                         Text(
@@ -340,20 +403,27 @@ fun JobItem(job: JobData) {
 
                     Spacer(modifier = Modifier.height(16.dp))
                 }
-
-                // Apply Button
                 Button(
                     modifier = Modifier.fillMaxWidth(),
                     onClick = {
-                        // Handle Apply Now action
+                        navController.navigate(Screens.AddJobScreen.route)
                     },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    )
+                        containerColor = if (deadlineDate != null && !currentDate.isAfter(deadlineDate))
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                        contentColor = if (deadlineDate != null && !currentDate.isAfter(deadlineDate))
+                            MaterialTheme.colorScheme.onPrimary
+                        else
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                    ),
+                    enabled = deadlineDate != null && !currentDate.isAfter(deadlineDate) // Disable button if deadline has passed
                 ) {
-                    Text(text = "Apply Now")
+                    Text(text = if (deadlineDate != null && !currentDate.isAfter(deadlineDate)) "Apply" else "Deadline Passed")
                 }
+
+
             }
         }
     }

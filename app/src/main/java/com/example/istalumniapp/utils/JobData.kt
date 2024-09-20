@@ -1,7 +1,5 @@
 package com.example.istalumniapp.utils
 
-import com.google.type.Date
-
 //import java.util.Date
 
 enum class JobType {
@@ -22,5 +20,5 @@ data class JobData(
     var educationLevel: String = "",
     var companyLogo: String = "",
     var skills: List<String> = emptyList(),
-//    var deadlineDate: Date? = null // Add a deadline date property
+    var deadlineDate: java.util.Date? = null // Add a deadline date property
 )

@@ -20,6 +20,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import coil.compose.rememberImagePainter
+import coil.request.ImageRequest
+import com.example.istalumniapp.R
 import com.example.istalumniapp.nav.Screens
 import com.example.istalumniapp.utils.ProfileViewModel
 import com.example.istalumniapp.utils.SharedViewModel
@@ -186,8 +188,17 @@ fun AlumniTopBar(
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (profilePhotoUrl != null) {
+
+                        val painter = rememberAsyncImagePainter(
+                            ImageRequest.Builder(LocalContext.current)
+                                .data(profilePhotoUrl.ifBlank { R.drawable.placeholder }) // Handle empty URL properly
+                                .crossfade(true)
+                                .placeholder(R.drawable.placeholder)
+                                .error(R.drawable.error)
+                                .build()
+                        )
                         Image(
-                            painter = rememberAsyncImagePainter(profilePhotoUrl),
+                            painter = painter,
                             contentDescription = "Profile Photo",
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
@@ -316,9 +327,9 @@ fun DashboardTopBar(navController: NavController, userRole: String?, onLogoutCli
                         modifier = Modifier.size(40.dp)
                     )
                 }
-                IconButton(onClick = { /* TODO: Handle Manage Users */ }) {
+                IconButton(onClick = { navController.navigate(Screens.ViewAlumniProfilesScreen.route) }) {
                     Icon(
-                        Icons.Filled.Person,
+                        Icons.Filled.AccountCircle,
                         contentDescription = "Manage Users",
                         modifier = Modifier.size(40.dp)
                     )

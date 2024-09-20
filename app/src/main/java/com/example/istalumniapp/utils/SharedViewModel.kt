@@ -82,6 +82,14 @@ class SharedViewModel : ViewModel() {
         }
     }
 
+
+
+//    Function to edit job
+    fun editJob(
+
+    ){
+
+    }
     // Function to save skill data
     fun saveSkill(
         skill: SkillData,
