@@ -54,30 +54,8 @@ class SharedViewModel : ViewModel() {
             }
         }
     }
-    // Function to retrieve all alumni profiles
-    fun retrieveAlumniProfiles(
-        onLoading: (Boolean) -> Unit,
-        onSuccess: (List<AlumniProfileData>) -> Unit,
-        onFailure: (String) -> Unit
-    ) {
-        CoroutineScope(Dispatchers.IO).launch {
-            val firestoreRef = firestore.collection("alumniProfiles")
-            onLoading(true)
-            try {
-                firestoreRef.get().addOnSuccessListener { result ->
-                    val profiles = result.mapNotNull { it.toObject(AlumniProfileData::class.java) }
-                    onLoading(false)
-                    onSuccess(profiles)
-                }.addOnFailureListener {
-                    onLoading(false)
-                    onFailure("Error fetching profiles: ${it.message}")
-                }
-            } catch (e: Exception) {
-                onLoading(false)
-                onFailure("Error: ${e.message}")
-            }
-        }
-    }
+
+
 
     // Function to save job data
     fun saveJob(

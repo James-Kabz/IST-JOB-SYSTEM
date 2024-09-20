@@ -22,6 +22,41 @@ import com.example.istalumniapp.nav.Screens
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
+import android.content.Context
+import androidx.compose.ui.platform.LocalContext
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+
+
+
+
+// Define the DataStore
+private val Context.dataStore by preferencesDataStore(name = "user_preferences")
+
+// Define the key for storing email
+private val EMAIL_KEY = stringPreferencesKey("email")
+
+// Function to save the email
+suspend fun saveEmail(context: Context, email: String) {
+    context.dataStore.edit { preferences ->
+        preferences[EMAIL_KEY] = email
+    }
+}
+
+// Function to retrieve the email
+// Function to retrieve the email, now using flow collection inside the coroutine
+suspend fun getEmail(context: Context): String? {
+    return context.dataStore.data
+        .map { preferences ->
+            preferences[EMAIL_KEY] ?: ""
+        }
+        .firstOrNull() // This collects the flow and returns the first result
+}
+
 
 @Composable
 fun ISTLoginScreen(navController: NavController) {
@@ -33,7 +68,7 @@ fun ISTLoginScreen(navController: NavController) {
     var passwordVisible by remember { mutableStateOf(false) }
     var showPasswordToggle by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-    var isLoading by remember { mutableStateOf(false) } // State to track loading
+    var isLoading by remember { mutableStateOf(false) }
 
     val visualTransformation = if (passwordVisible) {
         VisualTransformation.None
@@ -41,16 +76,29 @@ fun ISTLoginScreen(navController: NavController) {
         PasswordVisualTransformation()
     }
 
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
+    // Only load email if it has been recently saved, not on every app launch
+    LaunchedEffect(Unit) {
+        coroutineScope.launch {
+            val savedEmail = getEmail(context)  // Call the refactored getEmail function
+            if (savedEmail != null) {
+                email = savedEmail
+            }
+        }
+    }
+
     val navigateToDashboard by rememberUpdatedState(newValue = { _: String ->
         navController.navigate(Screens.DashboardScreen.route) {
-            popUpTo(0) { inclusive = true } // Clears entire back stack
-            launchSingleTop = true // Prevent multiple instances of the dashboard screen
+            popUpTo(0) { inclusive = true }
+            launchSingleTop = true
         }
     })
 
     val navigateToCreateProfile by rememberUpdatedState(newValue = {
         navController.navigate(Screens.CreateProfileScreen.route) {
-            popUpTo(0) { inclusive = true } // Clears entire back stack
+            popUpTo(0) { inclusive = true }
         }
     })
 
@@ -167,13 +215,16 @@ fun ISTLoginScreen(navController: NavController) {
                     Button(
                         onClick = {
                             if (email.isNotEmpty() && password.isNotEmpty()) {
-                                isLoading = true // Start loading
+                                isLoading = true
                                 signIn(email, password, auth,
                                     onSuccess = { user ->
+                                        coroutineScope.launch {
+                                            saveEmail(context, email) // Save email after successful login
+                                        }
                                         fetchUserRoleAndNavigate(auth, navController, navigateToDashboard, navigateToCreateProfile)
                                     },
                                     onFailure = { error ->
-                                        isLoading = false // Stop loading
+                                        isLoading = false
                                         errorMessage = error
                                     })
                             } else {
@@ -231,6 +282,7 @@ private fun signIn(
             }
         }
 }
+
 private fun fetchUserRoleAndNavigate(
     auth: FirebaseAuth,
     navController: NavController,
@@ -240,21 +292,16 @@ private fun fetchUserRoleAndNavigate(
     val uid = auth.currentUser?.uid
     if (uid != null) {
         val db = FirebaseFirestore.getInstance()
-        // Fetch user role
         db.collection("users").document(uid).get()
             .addOnSuccessListener { documentSnapshot ->
-                val role = documentSnapshot.getString("role") ?: "alumni" // Default to alumni
-
+                val role = documentSnapshot.getString("role") ?: "alumni"
                 if (role == "admin") {
-                    // Directly navigate to the dashboard if the user is an admin
                     navigateToDashboard("admin")
                 } else {
-                    // Check if the alumni has created a profile
-                    checkIfProfileExists(uid,navController, navigateToDashboard, navigateToCreateProfile)
+                    checkIfProfileExists(uid, navController, navigateToDashboard, navigateToCreateProfile)
                 }
             }
             .addOnFailureListener { e ->
-                // Handle failure (show error or retry)
                 Toast.makeText(navController.context, "Error fetching user role: ${e.message}", Toast.LENGTH_LONG).show()
             }
     }
@@ -267,21 +314,15 @@ private fun checkIfProfileExists(
     navigateToCreateProfile: () -> Unit
 ) {
     val db = FirebaseFirestore.getInstance()
-
-    // Query the 'alumniProfiles' collection to check if the profile exists
     db.collection("alumniProfiles").document(uid).get()
         .addOnSuccessListener { documentSnapshot ->
             if (documentSnapshot.exists()) {
-                // If the profile exists, navigate to the DashboardScreen
                 navigateToDashboard("alumni")
             } else {
-                // If the profile doesn't exist, navigate to the CreateProfileScreen
                 navigateToCreateProfile()
             }
         }
         .addOnFailureListener { e ->
-            // Handle the error, e.g., show a message
             Toast.makeText(navController.context, "Error checking profile: ${e.message}", Toast.LENGTH_LONG).show()
         }
 }
-

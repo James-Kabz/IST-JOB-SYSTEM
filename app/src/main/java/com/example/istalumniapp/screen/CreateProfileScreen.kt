@@ -103,6 +103,14 @@ fun CreateProfileScreen(navController: NavController, profileViewModel: ProfileV
     var loading by remember { mutableStateOf(false) } // Loading state
 
 
+    // Fetch saved email using LaunchedEffect when the screen loads
+    LaunchedEffect(Unit) {
+        val savedEmail = getEmail(context)
+        if (savedEmail != null) {
+            email = savedEmail
+        }
+    }
+
     // Safe state update using LaunchedEffect
     LaunchedEffect(Unit) {
         profileViewModel.retrieveSkills(
@@ -122,13 +130,16 @@ fun CreateProfileScreen(navController: NavController, profileViewModel: ProfileV
 
     // If loading is true, show a blank screen with the loading indicator
     if (loading) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            CircularProgressIndicator(
-                color = Color.Blue, // Customize the color
-                strokeWidth = 4.dp
+            CircularProgressIndicator(color = colorScheme.primary)
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Please wait as we create your profile...",
+                color = colorScheme.onBackground,
+                style = MaterialTheme.typography.bodyMedium
             )
         }
     } else {
@@ -256,6 +267,14 @@ fun CreateProfileScreen(navController: NavController, profileViewModel: ProfileV
                                 profilePhotoUri = profilePhotoUri,
                                 context = context,
                                 navController = navController, // Pass the NavController here
+                                onComplete = {
+                                    loading = false // Set loading to false after completion
+                                    navController.navigate(Screens.DashboardScreen.route)
+                                },
+                                onError = { error ->
+                                    loading = false
+                                    errorMessage = error // Display error message
+                                }
                             )
 
                         }
@@ -353,6 +372,7 @@ fun ProcedureOne(
                 keyboardType = KeyboardType.Email,
                 imeAction = ImeAction.Next
             ),
+            readOnly = true,
             isError = email.isBlank()
         )
 

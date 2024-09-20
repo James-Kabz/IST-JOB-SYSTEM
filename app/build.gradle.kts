@@ -51,6 +51,7 @@ android {
 }
 
 dependencies {
+    implementation (libs.androidx.datastore.preferences)
     implementation(libs.androidx.activity.compose)
     implementation(libs.accompanist.coil)
     implementation(libs.coil.compose) // Check the latest version on the Coil GitHub repository
@@ -76,6 +77,7 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.ui.android)
     implementation(libs.androidx.ui.text.google.fonts)
+    implementation(libs.firebase.appcheck.debug)
     testImplementation(libs.junit)
 
     androidTestImplementation(libs.androidx.junit)

@@ -2,7 +2,6 @@ package com.example.istalumniapp.nav
 
 sealed class Screens(val route:String)
 {
-    data object ViewAlumniProfilesScreen:Screens(route = "view_profiles")
     data object  ViewProfileScreen:Screens(route = "view_profile")
     data object CreateProfileScreen:Screens(route = "create_profile")
     data object AddSkillScreen:Screens(route = "add_skill")
