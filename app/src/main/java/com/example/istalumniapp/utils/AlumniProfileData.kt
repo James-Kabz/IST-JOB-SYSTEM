@@ -15,7 +15,7 @@ enum class DegreeChoice {
 
 //@Entity(tableName = "alumniProfiles")
 data class AlumniProfileData(
-    @PrimaryKey val profileId: String = "",
+    var profileID: String = "",
     var fullName: String = "",
     var email: String = "",
     var degree: DegreeChoice = DegreeChoice.Degree_In_Software_Engineering,

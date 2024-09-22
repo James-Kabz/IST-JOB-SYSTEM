@@ -142,9 +142,14 @@ fun ViewProfileScreen(navController: NavController, profileViewModel: ProfileVie
                     )
                 }
                 else -> {
+
+
+
+
+
                     // Show the profile details
                     profileData.value?.let { profile ->
-                        ProfileDetails(profile, profilePhotoUrl.value)
+                        ProfileDetails(profile, profilePhotoUrl.value,navController)
                     }
                 }
             }
@@ -154,7 +159,10 @@ fun ViewProfileScreen(navController: NavController, profileViewModel: ProfileVie
 
 
 @Composable
-fun ProfileDetails(profile: AlumniProfileData, value: String?) {
+fun ProfileDetails(profile: AlumniProfileData, profilePhotoUrl: String?, navController: NavController) {
+    var isLoading by remember { mutableStateOf(false) }  // Loading state for the button click
+    val context = LocalContext.current
+
     Column(
         modifier = Modifier
             .padding(16.dp)
@@ -162,60 +170,82 @@ fun ProfileDetails(profile: AlumniProfileData, value: String?) {
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
-        // Header Section
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 24.dp),
-            contentAlignment = Alignment.Center
-        ) {
-
-            ProfileImage(profile.profilePhotoUri ?: "")
-        }
-
-        // Basic Info
-        Text(
-            text = profile.fullName,
-            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-        Text(
-            text = profile.currentJob,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(bottom = 16.dp)
-        ) {
-            Icon(
-                Icons.Default.LocationOn,
-                contentDescription = "Location",
-                tint = Color.Gray,
-                modifier = Modifier.size(20.dp)
+        // If the loading state is true, display the CircularProgressIndicator
+        if (isLoading) {
+            CircularProgressIndicator(
+                color = MaterialTheme.colorScheme.primary,
+                strokeWidth = 4.dp,
+                modifier = Modifier.size(48.dp)
             )
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(text = profile.location, style = MaterialTheme.typography.bodyMedium)
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Loading profile...",
+                color = MaterialTheme.colorScheme.onBackground,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        } else {
+            Button(onClick = {
+                isLoading = false // Set loading to true when user clicks the button
+                // Simulate delay or actual profile load before navigation
+                // You can add a delay here or make sure any required data is fetched
+
+                navController.navigate(Screens.EditProfileScreen.route)
+
+                isLoading = false // Set to false after navigation (optional, depending on flow)
+            }) {
+                Text(text = "Edit Profile")
+            }
+
+            // Other Profile Details UI below the button
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                ProfileImage(profile.profilePhotoUri ?: "")
+            }
+
+            // Display profile information
+            Text(
+                text = profile.fullName,
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            Text(
+                text = profile.currentJob,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 16.dp)
+            ) {
+                Icon(
+                    Icons.Default.LocationOn,
+                    contentDescription = "Location",
+                    tint = Color.Gray,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(text = profile.location, style = MaterialTheme.typography.bodyMedium)
+            }
+
+            // Rest of the profile sections (Contact, Education, Skills)
+            HorizontalDivider()
+            SectionHeader("Contact Information")
+            ContactInfoSection(profile)
+            HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+            SectionHeader("Education")
+            EducationSection(profile)
+            HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+            SectionHeader("Skills")
+            SkillsSection(profile.skills)
         }
-
-        // Section: Contact Info
-        HorizontalDivider()
-        SectionHeader("Contact Information")
-        ContactInfoSection(profile)
-
-        // Section: Education
-        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
-        SectionHeader("Education")
-        EducationSection(profile)
-
-        // Section: Skills
-        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
-        SectionHeader("Skills")
-        SkillsSection(profile.skills)
     }
 }
+
 
 @Composable
 fun SectionHeader(title: String) {

@@ -134,13 +134,6 @@ fun DashboardBottomBar(navController: NavController, userRole: String?) {
                 "alumni" -> AlumniDashboard(navController = navController)
                 "admin" -> AdminDashboard(navController = navController)
             }
-            IconButton(onClick = { navController.navigate(Screens.DisplayJobScreen.route) }) {
-                Icon(
-                    Icons.Filled.MailOutline,
-                    contentDescription = "Jobs",
-                    modifier = Modifier.size(40.dp)
-                )
-            }
         }
     }
 }
@@ -153,7 +146,7 @@ fun AdminTopBar(navController: NavController, onLogoutClick: () -> Unit) {
         modifier = Modifier.background(MaterialTheme.colorScheme.onPrimary),
         title = { Text("Admin Dashboard") },
         navigationIcon = {
-            IconButton(onClick = { navController.navigate(Screens.ViewProfileScreen.route) }) {
+            IconButton(onClick = { }) {
                 Icon(Icons.Default.Person, contentDescription = "Profile")
             }
         },

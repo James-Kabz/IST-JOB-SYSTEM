@@ -19,6 +19,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Environment
+import androidx.compose.runtime.Composable
 import androidx.core.net.toUri
 import androidx.navigation.NavController
 import com.example.istalumniapp.nav.Screens
@@ -50,11 +51,11 @@ class SharedViewModel : ViewModel() {
             if (uid != null) {
                 val db = FirebaseFirestore.getInstance()
                 val documentSnapshot = db.collection("users").document(uid).get().await()
-                _userRole.value = documentSnapshot.getString("role") ?: "alumni" // Default to alumni if role is not found
+                _userRole.value = documentSnapshot.getString("role")
+                    ?: "alumni" // Default to alumni if role is not found
             }
         }
     }
-
 
 
     // Function to save job data
@@ -67,7 +68,8 @@ class SharedViewModel : ViewModel() {
             firestoreRef.set(jobData)
                 .addOnSuccessListener {
                     CoroutineScope(Dispatchers.Main).launch {
-                        Toast.makeText(context, "Job Posted Successfully", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Job Posted Successfully", Toast.LENGTH_SHORT)
+                            .show()
                     }
                 }
                 .addOnFailureListener { e ->
@@ -83,13 +85,69 @@ class SharedViewModel : ViewModel() {
     }
 
 
-
-//    Function to edit job
+    // Your editJob method remains unchanged
     fun editJob(
+        jobID: String,
+        updatedJob: JobData,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        val db = FirebaseFirestore.getInstance()
+        val jobRef = db.collection("jobs").document(jobID)
 
-    ){
-
+        jobRef.set(updatedJob)
+            .addOnSuccessListener { onSuccess() }
+            .addOnFailureListener { e -> onFailure(e.message ?: "Error updating job") }
     }
+
+    //    Function to edit job
+    fun getJobByID(
+        jobID: String,
+        onSuccess: (JobData) -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        val db = FirebaseFirestore.getInstance()
+        val jobRef = db.collection("jobs").document(jobID)
+
+        jobRef.get()
+            .addOnSuccessListener { document ->
+                if (document.exists()) {
+                    val jobData = document.toObject(JobData::class.java)
+                    if (jobData != null) {
+                        onSuccess(jobData)
+                    } else {
+                        onFailure("Failed to parse job data")
+                    }
+                } else {
+                    onFailure("Job does not exist")
+                }
+            }
+            .addOnFailureListener { e ->
+                onFailure(e.message ?: "Error fetching job data")
+            }
+    }
+
+
+    fun deleteJob(
+        jobID: String,
+        onSuccess: () -> Unit, // Remove @Composable annotation
+        onFailure: (String) -> Unit
+    ) {
+        val db = FirebaseFirestore.getInstance()
+        val jobRef = db.collection("jobs").document(jobID)
+
+        jobRef.delete()
+            .addOnSuccessListener {
+                // Call the success callback
+                onSuccess()
+            }
+            .addOnFailureListener { e ->
+                // Call the failure callback
+                onFailure(e.message ?: "Error deleting job")
+            }
+    }
+
+
     // Function to save skill data
     fun saveSkill(
         skill: SkillData,
@@ -100,7 +158,8 @@ class SharedViewModel : ViewModel() {
             firestoreRef.set(skill)
                 .addOnSuccessListener {
                     CoroutineScope(Dispatchers.Main).launch {
-                        Toast.makeText(context, "Skill Saved Successfully", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Skill Saved Successfully", Toast.LENGTH_SHORT)
+                            .show()
                     }
                 }
                 .addOnFailureListener { e ->
@@ -164,8 +223,6 @@ class SharedViewModel : ViewModel() {
             }
         }
     }
-
-
 
 
 }
