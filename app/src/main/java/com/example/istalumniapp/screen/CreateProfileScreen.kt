@@ -245,7 +245,7 @@ fun CreateProfileScreen(navController: NavController, profileViewModel: ProfileV
                             loading = true // Set loading to true before starting profile creation
 
                             val alumniProfileData = AlumniProfileData(
-                                profileId = "", // Set a unique ID for the profile
+                                profileID = "", // Set a unique ID for the profile
                                 fullName = fullName,
                                 email = email,
                                 degree = degree,

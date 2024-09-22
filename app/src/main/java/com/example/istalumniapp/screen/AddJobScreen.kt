@@ -14,12 +14,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -42,10 +45,13 @@ import java.util.Calendar
 import java.util.Date
 import java.util.UUID
 
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.Text
+import androidx.compose.ui.graphics.Color
+
 @Composable
 fun AddJobScreen(navController: NavController, sharedViewModel: SharedViewModel) {
     // States for each field
-//    val jobID by remember { mutableStateOf("") }
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var location by remember { mutableStateOf("") }
@@ -56,7 +62,7 @@ fun AddJobScreen(navController: NavController, sharedViewModel: SharedViewModel)
     var companyLogo by remember { mutableStateOf("") }
 
     var jobType by remember { mutableStateOf(JobType.FULL_TIME) }
-    var expanded by remember { mutableStateOf(false) }  // For dropdown menu
+    var expanded by remember { mutableStateOf(false) }
 
     var selectedSkills by remember { mutableStateOf(listOf<String>()) }
     var skills by remember { mutableStateOf(listOf<SkillData>()) }
@@ -66,11 +72,10 @@ fun AddJobScreen(navController: NavController, sharedViewModel: SharedViewModel)
 
     val context = LocalContext.current
 
-    // New deadlineDate state for selecting the deadline date
+    // Deadline date state
     var deadlineDate by remember { mutableStateOf<Date?>(null) }
     val deadlineDateFormatted = deadlineDate?.let { DateFormat.getDateInstance().format(it) } ?: "Select Deadline Date"
 
-    // DatePickerDialog to pick the deadline date
     val calendar = Calendar.getInstance()
     val year = calendar.get(Calendar.YEAR)
     val month = calendar.get(Calendar.MONTH)
@@ -84,12 +89,8 @@ fun AddJobScreen(navController: NavController, sharedViewModel: SharedViewModel)
         }, year, month, day
     )
 
-
-
-    // State to manage current step
     var currentStep by remember { mutableIntStateOf(1) }
 
-    // Load skills on entering step 5
     if (currentStep == 5 && skills.isEmpty() && !skillsLoading) {
         sharedViewModel.retrieveSkills(
             onLoading = { skillsLoading = it },
@@ -97,138 +98,173 @@ fun AddJobScreen(navController: NavController, sharedViewModel: SharedViewModel)
             onFailure = { skillsError = it }
         )
     }
-    // Error state for validation
+
     var errorMessage by remember { mutableStateOf("") }
+    var isSubmitting by remember { mutableStateOf(false) }
 
-    // Main Layout
-    Column(modifier = Modifier.fillMaxSize()) {
-        // Back Button
-        Row(
-            modifier = Modifier
-                .padding(start = 15.dp, top = 55.dp)
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.Start
-        ) {
-            IconButton(
-                onClick = { navController.popBackStack() }
+    // Define the total steps
+    val totalSteps = 5
+    val progress = currentStep.toFloat() / totalSteps.toFloat()
+
+    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            // Back Button
+            Row(
+                modifier = Modifier
+                    .padding(top = 16.dp)
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.Start
             ) {
-                Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "back_button")
+                IconButton(onClick = { navController.popBackStack() }) {
+                    Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "back_button")
+                }
             }
-        }
 
-        // Error Message Display
-        if (errorMessage.isNotEmpty()) {
-            Text(
-                text = errorMessage,
-                color = androidx.compose.ui.graphics.Color.Red,
-                modifier = Modifier.padding(16.dp)
-            )
-        }
+            // Step Progress Indicator
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(text = "Step $currentStep of $totalSteps", style = MaterialTheme.typography.bodyLarge)
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
 
-        // Steps Layout
-        when (currentStep) {
-            1 -> StepOne(
-                title = title,
-                onTitleChange = { title = it },
-                description = description,
-                onDescriptionChange = { description = it },
-                onNext = {
-                    if ( title.isBlank() || description.isBlank()) {
-                        errorMessage = "Please fill in all fields to proceed."
-                    } else {
-                        errorMessage = ""
-                        currentStep = 2
-                    }
+            // Show Progress Indicator if submitting
+            if (isSubmitting) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 16.dp),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
-            )
-            2 -> StepTwo(
-                location = location,
-                onLocationChange = { location = it },
-                salary = salary,
-                onSalaryChange = { salary = it },
-                onPrevious = { currentStep = 1 },
-                onNext = {
-                    if (location.isBlank() || salary.isBlank()) {
-                        errorMessage = "Please fill in all fields to proceed."
-                    } else {
-                        errorMessage = ""
-                        currentStep = 3
-                    }
-                }
-            )
-            3 -> StepThree(
-                companyName = companyName,
-                onCompanyNameChange = { companyName = it },
-                jobType = jobType,
-                onJobTypeChange = { jobType = it },
-                expanded = expanded,
-                onExpandedChange = { expanded = it },
-                companyLogo = companyLogo,
-                onCompanyLogoChange = { companyLogo = it },
-                onPrevious = { currentStep = 2 },
-                onNext = {
-                    if (companyName.isBlank() || companyLogo.isBlank()) {
-                        errorMessage = "Please fill in all fields to proceed."
-                    } else {
-                        errorMessage = ""
-                        currentStep = 4
-                    }
-                }
-            )
-            4 -> StepFour(
-                experienceLevel = experienceLevel,
-                onExperienceLevelChange = { experienceLevel = it },
-                educationLevel = educationLevel,
-                onEducationLevelChange = { educationLevel = it },
-                onPrevious = { currentStep = 3 },
-                onNext = {
-                    if (experienceLevel.isBlank() || educationLevel.isBlank()) {
-                        errorMessage = "Please fill in all the fields to process"
-                    } else{
-                        errorMessage = ""
-                        currentStep = 5
-                    }
-                }
-            )
-            5 -> StepFive(
-                selectedSkills = selectedSkills,
-                onSkillSelected = { selectedSkills = selectedSkills + it },
-                onSkillDeselected = { selectedSkills = selectedSkills - it },
-                skills = skills,
-                expanded = skillsExpanded,
-                deadlineDateFormatted = deadlineDateFormatted,
-                onDeadlineDateClick = { datePickerDialog.show() },
-                onExpandedChange = { skillsExpanded = it },
-                onPrevious = { currentStep = 4 },
-                onSubmit = {
-                    if (selectedSkills.isEmpty()) {
-                        errorMessage = "Please select at least one skill."
-                    } else {
-                        errorMessage = ""
-                        // Save job with selected skills
-                        val jobData = JobData(
-                            jobID = UUID.randomUUID().toString(),
-                            title = title,
-                            description = description,
-                            location = location,
-                            salary = salary,
-                            companyName = companyName,
-                            jobType = jobType,
-                            experienceLevel = experienceLevel,
-                            educationLevel = educationLevel,
-                            companyLogo = companyLogo,
-                            skills = selectedSkills, // Add selected skills to job data
-                            deadlineDate = deadlineDate
-                        )
-                        sharedViewModel.saveJob(jobData = jobData, context = context)
-                        navController.popBackStack() // Go back after submitting
-                    }
-                }
-            )
+            }
 
+            // Error Message Display
+            if (errorMessage.isNotEmpty()) {
+                Text(
+                    text = errorMessage,
+                    color = androidx.compose.ui.graphics.Color.Red,
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
+
+            // Steps Layout
+            when (currentStep) {
+                1 -> StepOne(
+                    title = title,
+                    onTitleChange = { title = it },
+                    description = description,
+                    onDescriptionChange = { description = it },
+                    onNext = {
+                        if (title.isBlank() || description.isBlank()) {
+                            errorMessage = "Please fill in all fields to proceed."
+                        } else {
+                            errorMessage = ""
+                            currentStep = 2
+                        }
+                    }
+                )
+                2 -> StepTwo(
+                    location = location,
+                    onLocationChange = { location = it },
+                    salary = salary,
+                    onSalaryChange = { salary = it },
+                    onPrevious = { currentStep = 1 },
+                    onNext = {
+                        if (location.isBlank() || salary.isBlank()) {
+                            errorMessage = "Please fill in all fields to proceed."
+                        } else {
+                            errorMessage = ""
+                            currentStep = 3
+                        }
+                    }
+                )
+                3 -> StepThree(
+                    companyName = companyName,
+                    onCompanyNameChange = { companyName = it },
+                    jobType = jobType,
+                    onJobTypeChange = { jobType = it },
+                    expanded = expanded,
+                    onExpandedChange = { expanded = it },
+                    companyLogo = companyLogo,
+                    onCompanyLogoChange = { companyLogo = it },
+                    onPrevious = { currentStep = 2 },
+                    onNext = {
+                        if (companyName.isBlank() || companyLogo.isBlank()) {
+                            errorMessage = "Please fill in all fields to proceed."
+                        } else {
+                            errorMessage = ""
+                            currentStep = 4
+                        }
+                    }
+                )
+                4 -> StepFour(
+                    experienceLevel = experienceLevel,
+                    onExperienceLevelChange = { experienceLevel = it },
+                    educationLevel = educationLevel,
+                    onEducationLevelChange = { educationLevel = it },
+                    onPrevious = { currentStep = 3 },
+                    onNext = {
+                        if (experienceLevel.isBlank() || educationLevel.isBlank()) {
+                            errorMessage = "Please fill in all the fields to process."
+                        } else {
+                            errorMessage = ""
+                            currentStep = 5
+                        }
+                    }
+                )
+                5 -> StepFive(
+                    selectedSkills = selectedSkills,
+                    onSkillSelected = { selectedSkills = selectedSkills + it },
+                    onSkillDeselected = { selectedSkills = selectedSkills - it },
+                    skills = skills,
+                    expanded = skillsExpanded,
+                    deadlineDateFormatted = deadlineDateFormatted,
+                    onDeadlineDateClick = { datePickerDialog.show() },
+                    onExpandedChange = { skillsExpanded = it },
+                    onPrevious = { currentStep = 4 },
+                    onSubmit = {
+                        if (selectedSkills.isEmpty()) {
+                            errorMessage = "Please select at least one skill."
+                        } else {
+                            errorMessage = ""
+                            isSubmitting = true
+                            val jobData = JobData(
+                                jobID = UUID.randomUUID().toString(),
+                                title = title,
+                                description = description,
+                                location = location,
+                                salary = salary,
+                                companyName = companyName,
+                                jobType = jobType,
+                                experienceLevel = experienceLevel,
+                                educationLevel = educationLevel,
+                                companyLogo = companyLogo,
+                                skills = selectedSkills,
+                                deadlineDate = deadlineDate
+                            )
+                            sharedViewModel.saveJob(jobData = jobData, context = context)
+                            isSubmitting = false
+                            navController.popBackStack() // Go back after submitting
+                        }
+                    }
+                )
+            }
         }
     }
 }
+
+
 
 @Composable
 fun StepOne(

@@ -21,7 +21,7 @@ import kotlinx.coroutines.flow.StateFlow
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Build
-
+import kotlinx.coroutines.CoroutineScope
 
 
 class ProfileViewModel :ViewModel()  {
@@ -149,6 +149,50 @@ class ProfileViewModel :ViewModel()  {
         }
     }
 
+
+    fun updateAlumniProfile(
+        updatedProfileData: AlumniProfileData,
+        newProfilePhotoUri: Uri?,
+        context: Context,
+        onLoading: (Boolean) -> Unit, // Loading callback
+        onComplete: () -> Unit,
+        onError: (String) -> Unit
+    ) = viewModelScope.launch(Dispatchers.IO) {
+        onLoading(true) // Start loading
+        val uid = FirebaseAuth.getInstance().currentUser?.uid
+        if (uid == null) {
+            withContext(Dispatchers.Main) {
+                onError("No user is currently signed in.")
+                onLoading(false) // End loading
+            }
+            return@launch
+        }
+
+        try {
+            val updatedProfilePhotoUrl = newProfilePhotoUri?.let {
+                uploadProfilePhoto(uid, it)
+            }
+
+            val finalProfileData = updatedProfileData.copy(
+                profilePhotoUri = updatedProfilePhotoUrl ?: updatedProfileData.profilePhotoUri
+            )
+
+            val firestoreRef = firestore.collection("alumniProfiles").document(uid)
+            firestoreRef.set(finalProfileData).await()
+
+            withContext(Dispatchers.Main) {
+                onComplete()
+                onLoading(false) // End loading
+            }
+        } catch (e: Exception) {
+            withContext(Dispatchers.Main) {
+                onError("Error updating profile: ${e.message}")
+                onLoading(false) // End loading
+            }
+        }
+    }
+
+
     fun retrieveCurrentUserProfile(
         context: Context,
         onLoading: (Boolean) -> Unit,
@@ -162,15 +206,15 @@ class ProfileViewModel :ViewModel()  {
             }
             return@launch
         }
-        val currentTime = System.currentTimeMillis()
-        if (currentTime - lastRequestTime < requestInterval) {
-            withContext(Dispatchers.Main) {
-                onFailure("Please wait before trying again.")
-            }
-            return@launch
-        }
-
-        lastRequestTime = currentTime
+//        val currentTime = System.currentTimeMillis()
+//        if (currentTime - lastRequestTime < requestInterval) {
+//            withContext(Dispatchers.Main) {
+//                onFailure("Please wait before trying again.")
+//            }
+//            return@launch
+//        }
+//
+//        lastRequestTime = currentTime
 
         val uid = FirebaseAuth.getInstance().currentUser?.uid
         if (uid == null) {
@@ -277,6 +321,31 @@ class ProfileViewModel :ViewModel()  {
 //            }
 //        }
 //    }
+
+    fun saveSkill(
+        skill: SkillData,
+        context: Context
+    ) = CoroutineScope(Dispatchers.IO).launch {
+        val firestoreRef = firestore.collection("skills").document(skill.skillID)
+        try {
+            firestoreRef.set(skill)
+                .addOnSuccessListener {
+                    CoroutineScope(Dispatchers.Main).launch {
+                        Toast.makeText(context, "Skill Saved Successfully", Toast.LENGTH_SHORT)
+                            .show()
+                    }
+                }
+                .addOnFailureListener { e ->
+                    CoroutineScope(Dispatchers.Main).launch {
+                        Toast.makeText(context, e.message, Toast.LENGTH_SHORT).show()
+                    }
+                }
+        } catch (e: Exception) {
+            withContext(Dispatchers.Main) {
+                Toast.makeText(context, e.message, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     fun retrieveSkills(
         onLoading: (Boolean) -> Unit,

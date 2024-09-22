@@ -1,5 +1,6 @@
 package com.example.istalumniapp.screen
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -23,34 +24,112 @@ import coil.annotation.ExperimentalCoilApi
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.example.istalumniapp.R
+import com.example.istalumniapp.nav.Screens
 import com.example.istalumniapp.utils.AlumniProfileData
 import com.example.istalumniapp.utils.ProfileViewModel
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.tasks.await
 
 @Composable
-fun ViewAlumniProfilesScreen(navController: NavController, profileViewModel: ProfileViewModel) {
+fun ViewAlumniProfilesScreen(
+    navController: NavController,
+    profileViewModel: ProfileViewModel
+) {
     val alumniProfiles by profileViewModel.alumniProfiles.collectAsState(initial = emptyList())
     val loading by profileViewModel.loading.collectAsState(initial = true)
     val errorMessage by profileViewModel.errorMessage.collectAsState(initial = null)
     val context = LocalContext.current
 
+    // State variables for the dashboard
+    var showLogoutConfirmation by remember { mutableStateOf(false) }
+    var userRole by remember { mutableStateOf<String?>(null) }
+    var profilePhotoUrl by remember { mutableStateOf<String?>(null) }
+    val loadingProfile = remember { mutableStateOf(true) }
+
+    // Fetch user role and profile photo
+    LaunchedEffect(Unit) {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid
+        if (uid != null) {
+            val db = FirebaseFirestore.getInstance()
+            val documentSnapshot = db.collection("users").document(uid).get().await()
+            userRole = documentSnapshot.getString("role") ?: "alumni"
+        }
+
+        profileViewModel.retrieveProfilePhoto(
+            onLoading = { loadingProfile.value = it },
+            onSuccess = { url -> profilePhotoUrl = url },
+            onFailure = { message -> Log.e("ViewAlumniProfilesScreen", "Error fetching profile photo: $message") }
+        )
+    }
+
+    // Fetch alumni profiles
     LaunchedEffect(Unit) {
         profileViewModel.retrieveAlumniProfiles(context = context)
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        when {
-            loading -> CircularProgressIndicator(color = MaterialTheme.colorScheme.primary, strokeWidth = 4.dp)
-            errorMessage != null -> ErrorMessage(errorMessage!!)
-            alumniProfiles.isNotEmpty() -> AlumniProfilesList(profiles = alumniProfiles,navController = navController)
-            else -> NoProfilesMessage()
+    // Show logout confirmation dialog
+    if (showLogoutConfirmation) {
+        LogoutConfirm(
+            onConfirm = {
+                FirebaseAuth.getInstance().signOut() // Log out the user
+                navController.navigate(Screens.ISTLoginScreen.route) // Navigate to login screen
+                showLogoutConfirmation = false
+            },
+            onDismiss = { showLogoutConfirmation = false }
+        )
+    }
+
+    // Main Scaffold with the TopBar and BottomBar
+    Scaffold(
+        topBar = {
+            DashboardTopBar(
+                navController = navController,
+                onLogoutClick = { showLogoutConfirmation = true },
+                userRole = userRole,
+                profilePhotoUrl = profilePhotoUrl
+            )
+        },
+        bottomBar = {
+            DashboardBottomBar(navController = navController, userRole = userRole)
+        }
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            contentAlignment = Alignment.Center
+        ) {
+            when {
+                loading -> {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        CircularProgressIndicator(
+                            color = MaterialTheme.colorScheme.primary,
+                            strokeWidth = 4.dp,
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp)) // Add space between the spinner and text
+                        Text(
+                            text = "Retrieving Profiles",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                    }
+                }
+
+                errorMessage != null -> ErrorMessage(errorMessage!!)
+                alumniProfiles.isNotEmpty() -> AlumniProfilesList(profiles = alumniProfiles, navController = navController)
+                else -> NoProfilesMessage()
+            }
+
         }
     }
 }
+
 
 @Composable
 fun ErrorMessage(message: String) {
@@ -91,15 +170,6 @@ fun AlumniProfileCard(profile: AlumniProfileData,navController: NavController) {
             .fillMaxWidth()
             .padding(vertical = 8.dp)
     ) {
-
-        // Add back button
-        IconButton(onClick = { navController.popBackStack() }) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back",
-                tint = MaterialTheme.colorScheme.onBackground
-            )
-        }
         Column(modifier = Modifier.padding(16.dp)) {
 
             profile.profilePhotoUri?.let { ProfilePic(profilePhotoUri = it) }
