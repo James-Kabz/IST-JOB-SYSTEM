@@ -15,21 +15,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.net.Uri
-import android.os.Environment
-import androidx.compose.runtime.Composable
-import androidx.core.net.toUri
-import androidx.navigation.NavController
-import com.example.istalumniapp.nav.Screens
-
-import com.google.firebase.storage.StorageReference
-
-import kotlinx.coroutines.*
-import kotlinx.coroutines.tasks.await
-import java.io.File
-import java.io.FileOutputStream
 
 class SharedViewModel : ViewModel() {
     private val firestore = FirebaseFirestore.getInstance()
@@ -158,8 +143,7 @@ class SharedViewModel : ViewModel() {
             firestoreRef.set(skill)
                 .addOnSuccessListener {
                     CoroutineScope(Dispatchers.Main).launch {
-                        Toast.makeText(context, "Skill Saved Successfully", Toast.LENGTH_SHORT)
-                            .show()
+                        Toast.makeText(context, "Skill Saved Successfully", Toast.LENGTH_SHORT).show()
                     }
                 }
                 .addOnFailureListener { e ->
@@ -173,6 +157,7 @@ class SharedViewModel : ViewModel() {
             }
         }
     }
+
 
     // Function to retrieve job data
     fun retrieveJobs(

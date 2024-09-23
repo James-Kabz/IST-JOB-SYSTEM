@@ -60,8 +60,21 @@ fun EditProfileScreen(
     }
 
     if (loading) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()  // Show loading indicator while waiting
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            CircularProgressIndicator(
+                color = colorScheme.primary,
+                strokeWidth = 4.dp,
+                modifier = Modifier.size(48.dp)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Retrieving Jobs, please wait...",
+                color = colorScheme.onBackground,
+                style = MaterialTheme.typography.bodyMedium
+            )
         }
     } else {
         Column(
@@ -76,7 +89,7 @@ fun EditProfileScreen(
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back",
-                    tint = MaterialTheme.colorScheme.onBackground
+                    tint = colorScheme.onBackground
                 )
             }
             // Profile Photo Section
@@ -275,7 +288,7 @@ fun SkillsSelection(
                 text = {
                     Text(
                         text = "Add Skill",
-                        color = MaterialTheme.colorScheme.primary // Set your desired color here
+                        color = colorScheme.primary // Set your desired color here
                     )
                 }
             )

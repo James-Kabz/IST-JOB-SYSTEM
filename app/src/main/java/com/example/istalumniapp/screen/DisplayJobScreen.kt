@@ -38,6 +38,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.time.LocalDate
 import java.time.ZoneId
+
 @Composable
 fun DisplayJobScreen(
     navController: NavController,
@@ -63,6 +64,7 @@ fun DisplayJobScreen(
             userRole = documentSnapshot.getString("role") ?: "alumni"
         }
 
+        if (userRole == "alumni"){
         profileViewModel.retrieveProfilePhoto(
             onLoading = { loading.value = it },
             onSuccess = { url -> profilePhotoUrl = url },
@@ -71,8 +73,9 @@ fun DisplayJobScreen(
                     "DisplayJobScreen",
                     "Error fetching profile photo: $message"
                 )
-            }
-        )
+
+        }
+        )}
     }
 
     // Fetch jobs
@@ -108,7 +111,7 @@ fun DisplayJobScreen(
         bottomBar = {
             DashboardBottomBar(navController = navController, userRole = userRole)
         },
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) } // Add SnackbarHost
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }   // Add SnackbarHost
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -138,9 +141,9 @@ fun DisplayJobScreen(
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
+
                 }
-            }
-else {
+            } else {
                 Column(modifier = Modifier.fillMaxSize()) {
                     // Conditionally show the "Add Job" and "Add Skill" buttons if the user is an admin
                     if (userRole == "admin") {
@@ -148,7 +151,7 @@ else {
                             horizontalArrangement = Arrangement.Center,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp)
+                                .padding(10.dp)
                         ) {
                             Button(onClick = { navController.navigate(Screens.AddJobScreen.route) }) {
                                 Text(text = "Add Job")
@@ -200,7 +203,8 @@ else {
                                         navController = navController,
                                         sharedViewModel = sharedViewModel,
                                         onJobDeleted = { deletedJob ->
-                                            jobs = jobs.filterNot { it.jobID == deletedJob.jobID } // Update the list
+                                            jobs =
+                                                jobs.filterNot { it.jobID == deletedJob.jobID } // Update the list
                                             coroutineScope.launch {
                                                 snackbarHostState.showSnackbar("Job deleted successfully")
                                             }
@@ -209,14 +213,14 @@ else {
                                 }
                             }
                         }
+
+
                     }
                 }
             }
         }
     }
 }
-
-
 
 
 @Composable
@@ -243,6 +247,7 @@ fun LogoutConfirm(onConfirm: () -> Unit, onDismiss: () -> Unit) {
         text = { Text("Are you sure you want to logout?") }
     )
 }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("NewApi")
 @Composable
@@ -275,7 +280,7 @@ fun JobItem(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Button(onClick = { navController.navigate("edit_job/${job.jobID}") }) {
-                        Text(text = "Edit Job")
+                        Icon(imageVector = Icons.Default.Edit, contentDescription = "Delete Job")
                     }
                     IconButton(onClick = { showDeleteConfirmation = true }) {
                         Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete Job")
@@ -494,7 +499,7 @@ fun JobDetails(
             Button(
                 modifier = Modifier.fillMaxWidth(),
                 onClick = {
-                    navController.navigate(Screens.AddJobScreen.route)
+                    navController.navigate("job_application/${job.jobID}")
                 },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if (deadlineDate != null && !currentDate.isAfter(deadlineDate))

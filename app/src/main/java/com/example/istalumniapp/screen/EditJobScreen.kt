@@ -1,24 +1,25 @@
 package com.example.istalumniapp.screen
 
 import android.app.DatePickerDialog
-import android.graphics.Paint.Align
+import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.*
+import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.istalumniapp.utils.JobData
 import com.example.istalumniapp.utils.JobType
 import com.example.istalumniapp.utils.SharedViewModel
+import com.example.istalumniapp.utils.SkillData
 import java.text.DateFormat
 import java.util.Calendar
 import java.util.Date
@@ -47,24 +48,22 @@ fun EditJobScreen(
     }
 
     if (isLoading) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-                modifier = Modifier.padding(16.dp)
-            ) {
-                CircularProgressIndicator(
-                    color = MaterialTheme.colorScheme.primary,
-                    strokeWidth = 4.dp,
-                    modifier = Modifier.size(48.dp)
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "Please wait...",
-                    color = MaterialTheme.colorScheme.onBackground,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            CircularProgressIndicator(
+                color = MaterialTheme.colorScheme.primary,
+                strokeWidth = 4.dp,
+                modifier = Modifier.size(48.dp)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Please wait...",
+                color = MaterialTheme.colorScheme.onBackground,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
     } else if (jobData != null) {
         JobEditForm(
             jobData = jobData!!,
@@ -77,6 +76,7 @@ fun EditJobScreen(
         }
     }
 }
+
 @Composable
 fun JobEditForm(
     jobData: JobData,
@@ -93,157 +93,194 @@ fun JobEditForm(
     var jobType by remember { mutableStateOf(jobData.jobType) }
     var selectedSkills by remember { mutableStateOf(jobData.skills) }
     var deadlineDate by remember { mutableStateOf(jobData.deadlineDate) }
-    var isUpdating by remember { mutableStateOf(false) } // Loader state
+    var isUpdating by remember { mutableStateOf(false) }
 
-    Column(
+    val context = LocalContext.current
+
+    // Define a background color
+    val backgroundColor = MaterialTheme.colorScheme.surfaceVariant // Adjust based on your theme
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
+            .background(backgroundColor)
             .padding(16.dp)
-            .verticalScroll(rememberScrollState())
     ) {
-
-        Spacer(modifier = Modifier.height(25.dp))
-        // Add back button
-        IconButton(onClick = { navController.popBackStack() }) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back",
-                tint = MaterialTheme.colorScheme.onBackground
-            )
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
-        Text(
-            text = "Update Job",
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(modifier = Modifier.height(30.dp))
-
-        OutlinedTextField(
-            value = title,
-            onValueChange = { title = it },
-            label = { Text("Title") },
-            modifier = Modifier.fillMaxWidth(),
-            isError = title.isBlank(),
-            singleLine = true
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedTextField(
-            value = description,
-            onValueChange = { description = it },
-            label = { Text("Description") },
-            modifier = Modifier.fillMaxWidth(),
-            isError = description.isBlank(),
-            maxLines = 4
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedTextField(
-            value = location,
-            onValueChange = { location = it },
-            label = { Text("Location") },
-            modifier = Modifier.fillMaxWidth(),
-            isError = location.isBlank(),
-            singleLine = true
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedTextField(
-            value = salary,
-            onValueChange = { salary = it },
-            label = { Text("Salary") },
-            modifier = Modifier.fillMaxWidth(),
-            isError = salary.isBlank(),
-            singleLine = true
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedTextField(
-            value = companyName,
-            onValueChange = { companyName = it },
-            label = { Text("Company Name") },
-            modifier = Modifier.fillMaxWidth(),
-            isError = companyName.isBlank(),
-            singleLine = true
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-
-        DropdownMenuWithJobTypeSelection(
-            selectedJobType = jobType,
-            onJobTypeSelected = { jobType = it }
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-
-        DatePickerField(deadlineDate) {
-            deadlineDate = it
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-
-        SkillsSelectionField(
-            selectedSkills = selectedSkills,
-            onSkillsSelected = { selectedSkills = it }
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(
-            onClick = {
-                isUpdating = true // Show loader when button is clicked
-                val updatedJob = jobData.copy(
-                    title = title,
-                    description = description,
-                    location = location,
-                    salary = salary,
-                    companyName = companyName,
-                    experienceLevel = experienceLevel,
-                    educationLevel = educationLevel,
-                    jobType = jobType,
-                    skills = selectedSkills,
-                    deadlineDate = deadlineDate
-                )
-
-                sharedViewModel.editJob(
-                    jobID = jobData.jobID,
-                    updatedJob = updatedJob,
-                    onSuccess = {
-                        isUpdating = false // Hide loader on success
-                        navController.popBackStack()
-                    },
-                    onFailure = { error ->
-                        isUpdating = false // Hide loader on failure
-                        var errorMessage = "Failed to update job: $error"
-                    }
-                )
-            },
-            modifier = Modifier.fillMaxWidth()
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),  // Make the form scrollable
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top
         ) {
-            if (isUpdating) {
-                CircularProgressIndicator(
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    strokeWidth = 2.dp,
-                    modifier = Modifier.size(24.dp)
-                )
-            } else {
-                Text("Update Job")
+            Text(
+                text = "Edit Job",
+                style = MaterialTheme.typography.headlineLarge,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            // Title Field
+            OutlinedTextField(
+                value = title,
+                onValueChange = { title = it },
+                label = { Text("Title") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                singleLine = true
+            )
+
+            // Description Field
+            OutlinedTextField(
+                value = description,
+                onValueChange = { description = it },
+                label = { Text("Description") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                maxLines = 4
+            )
+
+            // Location Field
+            OutlinedTextField(
+                value = location,
+                onValueChange = { location = it },
+                label = { Text("Location") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                singleLine = true
+            )
+
+            // Salary Field
+            OutlinedTextField(
+                value = salary,
+                onValueChange = { salary = it },
+                label = { Text("Salary") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                singleLine = true
+            )
+
+            // Skills Selection
+            SkillsSelectionField(
+                selectedSkills = selectedSkills,
+                onSkillsSelected = { selectedSkills = it },
+                saveSkill = { skill ->
+                    sharedViewModel.saveSkill(skill, context)
+                }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Experience Level Field
+            OutlinedTextField(
+                value = experienceLevel,
+                onValueChange = { experienceLevel = it },
+                label = { Text("Experience Level") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                singleLine = true
+            )
+
+            // Education Level Field
+            OutlinedTextField(
+                value = educationLevel,
+                onValueChange = { educationLevel = it },
+                label = { Text("Education Level") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                singleLine = true
+            )
+
+            // Job Type Dropdown
+            DropdownMenuWithJobTypeSelection(
+                selectedJobType = jobType,
+                onJobTypeSelected = { jobType = it }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Deadline Date Picker
+            DatePickerField(deadlineDate) {
+                deadlineDate = it
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // Update Job Button
+            Button(
+                onClick = {
+                    isUpdating = true
+                    val updatedJob = jobData.copy(
+                        title = title,
+                        description = description,
+                        location = location,
+                        salary = salary,
+                        companyName = companyName,
+                        experienceLevel = experienceLevel,
+                        educationLevel = educationLevel,
+                        jobType = jobType,
+                        skills = selectedSkills,
+                        deadlineDate = deadlineDate
+                    )
+
+                    sharedViewModel.editJob(
+                        jobID = jobData.jobID,
+                        updatedJob = updatedJob,
+                        onSuccess = {
+                            isUpdating = false
+                            navController.popBackStack()
+                        },
+                        onFailure = { error ->
+                            isUpdating = false
+                            Toast.makeText(context, "Failed to update job: $error", Toast.LENGTH_SHORT).show()
+                        }
+                    )
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                enabled = !isUpdating
+            ) {
+                if (isUpdating) {
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Text(
+                        text = "Updating Job, please wait...",
+                        color = colorScheme.onBackground,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                } else {
+                    Text("Update Job")
+                }
             }
         }
-        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
+
 @Composable
-fun SkillsSelectionField(selectedSkills: List<String>, onSkillsSelected: (List<String>) -> Unit) {
-    val allSkills = listOf("Kotlin", "Java", "Android", "Firebase")
+fun SkillsSelectionField(
+    selectedSkills: List<String>,
+    onSkillsSelected: (List<String>) -> Unit,
+    saveSkill: (SkillData) -> Unit
+) {
     var expanded by remember { mutableStateOf(false) }
+    var newSkill by remember { mutableStateOf("") }
+    val allSkills = remember { mutableStateListOf("Kotlin", "Java", "Android", "Firebase") }
+    val context = LocalContext.current
 
     Box(modifier = Modifier.fillMaxWidth()) {
         Button(onClick = { expanded = true }, modifier = Modifier.fillMaxWidth()) {
-            Text(
-                text = if (selectedSkills.isEmpty()) "Select Skills" else selectedSkills.joinToString(
-                    ", "
-                )
-            )
+            Text(if (selectedSkills.isEmpty()) "Select Skills" else selectedSkills.joinToString(", "))
         }
         DropdownMenu(
             expanded = expanded,
@@ -263,9 +300,33 @@ fun SkillsSelectionField(selectedSkills: List<String>, onSkillsSelected: (List<S
                     text = { Text(skill) }
                 )
             }
+            DropdownMenuItem(
+                onClick = { /* Do nothing */ },
+                text = {
+                    OutlinedTextField(
+                        value = newSkill,
+                        onValueChange = { newSkill = it },
+                        label = { Text("Add New Skill") }
+                    )
+                }
+            )
+            DropdownMenuItem(
+                onClick = {
+                    if (newSkill.isNotBlank() && !selectedSkills.contains(newSkill)) {
+                        val skillData = SkillData(skillID = newSkill, skillName = newSkill) // Create new SkillData
+                        saveSkill(skillData) // Save new skill to Firebase
+                        onSkillsSelected(selectedSkills + newSkill) // Update UI
+                        newSkill = "" // Reset the input field
+                    }
+                    expanded = false
+                },
+                text = { Text("Add Skill") }
+            )
         }
     }
 }
+
+
 
 @Composable
 fun DropdownMenuWithJobTypeSelection(
