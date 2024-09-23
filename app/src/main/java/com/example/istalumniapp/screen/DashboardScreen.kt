@@ -38,15 +38,19 @@ fun DashboardScreen(navController: NavController,profileViewModel: ProfileViewMo
     var showLogoutConfirmation by remember { mutableStateOf(false) }
     val context = LocalContext.current
     var isLoading by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+
     // Fetch user role when the composable is launched
     LaunchedEffect(Unit) {
         sharedViewModel.fetchUserRole()
 
+        if (userRole == "alumni"){
         profileViewModel.retrieveProfilePhoto(
             onLoading = { loading -> isLoading = loading },
-            onSuccess = { url -> profilePhotoUrl = url.toString() },
+            onSuccess = { url -> profilePhotoUrl = url },
             onFailure = { message -> Log.e("DisplayJobScreen", "Error fetching profile photo: $message") }
-        )
+        )}
     }
 
     // Check if the userRole is null, meaning it's still loading
@@ -82,7 +86,8 @@ fun DashboardScreen(navController: NavController,profileViewModel: ProfileViewMo
             },
             bottomBar = {
                 DashboardBottomBar(navController = navController, userRole = userRole)
-            }
+            },
+            snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
         ) { paddingValues ->
             Column(
                 modifier = Modifier
@@ -278,6 +283,19 @@ fun DashboardTopBar(navController: NavController, userRole: String?, onLogoutCli
                         modifier = Modifier.size(40.dp)
                     )
                 }
+                IconButton(onClick = {
+                    val currentUser = FirebaseAuth.getInstance().currentUser
+                    currentUser?.let {
+                        val userId = it.uid  // Get the current user's ID
+                        navController.navigate("${Screens.DisplayApplicationScreen.route}/$userId")
+                    }
+                }) {
+                    Icon(
+                        Icons.Filled.Star,
+                        contentDescription = "View Applications",
+                        modifier = Modifier.size(40.dp)
+                    )
+                }
                 IconButton(onClick = { navController.navigate(Screens.CreateProfileScreen.route) }) {
                     Icon(
                         Icons.Filled.Person,
@@ -313,9 +331,9 @@ fun DashboardTopBar(navController: NavController, userRole: String?, onLogoutCli
                         modifier = Modifier.size(40.dp)
                     )
                 }
-                IconButton(onClick = { /* TODO: Handle Admin Settings */ }) {
+                IconButton(onClick = {navController.navigate(Screens.ViewApplicationsScreen.route)}) {
                     Icon(
-                        Icons.Filled.Settings,
+                        Icons.Filled.Star,
                         contentDescription = "Admin Settings",
                         modifier = Modifier.size(40.dp)
                     )

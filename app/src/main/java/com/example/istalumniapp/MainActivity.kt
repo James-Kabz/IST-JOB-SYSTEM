@@ -15,6 +15,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.istalumniapp.nav.NavGraph
 import com.example.istalumniapp.ui.theme.ISTALUMNIAPPTheme
+import com.example.istalumniapp.utils.JobApplicationModel
 import com.example.istalumniapp.utils.ProfileViewModel
 import com.example.istalumniapp.utils.SharedViewModel
 import com.google.firebase.appcheck.FirebaseAppCheck
@@ -29,6 +30,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var navController: NavHostController
     private val sharedViewModel: SharedViewModel by viewModels()
     private val profileViewModel: ProfileViewModel by viewModels()
+    private val jobApplicationModel: JobApplicationModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,7 +60,8 @@ class MainActivity : ComponentActivity() {
                     NavGraph(
                         navController = navController,
                         sharedViewModel = sharedViewModel,
-                        profileViewModel = profileViewModel
+                        profileViewModel = profileViewModel,
+                        jobApplicationModel = jobApplicationModel
                     )
                 }
             }

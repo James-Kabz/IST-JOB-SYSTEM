@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -13,14 +14,18 @@ import com.example.istalumniapp.screen.AddJobScreen
 import com.example.istalumniapp.screen.AddSkillScreen
 import com.example.istalumniapp.screen.CreateProfileScreen
 import com.example.istalumniapp.screen.DashboardScreen
+import com.example.istalumniapp.screen.DisplayApplicationScreen
 import com.example.istalumniapp.screen.DisplayJobScreen
 import com.example.istalumniapp.screen.EditJobScreen
 import com.example.istalumniapp.screen.EditProfileScreen
 import com.example.istalumniapp.screen.ForgotPasswordScreen
 import com.example.istalumniapp.screen.ISTLoginScreen
 import com.example.istalumniapp.screen.ISTRegisterScreen
+import com.example.istalumniapp.screen.JobApplicationScreen
 import com.example.istalumniapp.screen.ViewAlumniProfilesScreen
+import com.example.istalumniapp.screen.ViewApplicationScreen
 import com.example.istalumniapp.screen.ViewProfileScreen
+import com.example.istalumniapp.utils.JobApplicationModel
 import com.example.istalumniapp.utils.JobData
 import com.example.istalumniapp.utils.ProfileViewModel
 import com.example.istalumniapp.utils.SharedViewModel
@@ -31,12 +36,54 @@ import com.example.istalumniapp.utils.SkillData
 fun NavGraph(
     navController: NavHostController,
     sharedViewModel: SharedViewModel,
-    profileViewModel: ProfileViewModel
+    profileViewModel: ProfileViewModel,
+    jobApplicationModel: JobApplicationModel
 ) {
     NavHost(
         navController = navController,
         startDestination = Screens.ISTLoginScreen.route
     ) {
+
+//        JOB APPLICATION SCREENS
+        composable(
+            route = Screens.JobApplicationScreen.route + "/{jobID}",
+            arguments = listOf(
+                navArgument("jobID") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val jobID = backStackEntry.arguments?.getString("jobID") ?: return@composable
+
+            JobApplicationScreen(
+                navController = navController,
+                jobID = jobID, // Pass the jobID obtained from the navigation
+                jobApplicationModel = jobApplicationModel
+            )
+        }
+
+//        view applications screen
+        composable(
+            route = "${Screens.DisplayApplicationScreen.route}/{userId}",
+            arguments = listOf(navArgument("userId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            // Retrieve the userId from the backStack arguments
+            val userId = backStackEntry.arguments?.getString("userId") ?: ""
+
+            // Pass the userId to DisplayApplicationScreen to fetch applications for the logged-in user
+            DisplayApplicationScreen(
+                navController = navController,
+                jobApplicationModel = viewModel(),
+                profileViewModel,
+                userId = userId // Pass userId instead of applicationId
+            )
+        }
+
+//        view applications screen
+        composable(
+            route = Screens.ViewApplicationsScreen.route
+        ) {
+            ViewApplicationScreen(navController = navController, applicationModel = jobApplicationModel )
+        }
+
 
 
 
