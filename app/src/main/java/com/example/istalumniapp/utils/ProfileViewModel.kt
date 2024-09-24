@@ -24,6 +24,7 @@ import android.os.Build
 import kotlinx.coroutines.CoroutineScope
 
 
+@Suppress("UNCHECKED_CAST")
 class ProfileViewModel :ViewModel()  {
 
 
@@ -55,6 +56,78 @@ class ProfileViewModel :ViewModel()  {
 
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
+
+    private val _matchedJobs = MutableStateFlow<List<JobData>>(emptyList())
+    val matchedJobs: StateFlow<List<JobData>> = _matchedJobs
+
+
+    // Function to retrieve the current user's skills from their profile
+    private suspend fun fetchAlumniSkills(uid: String): List<String> {
+        return try {
+            val documentSnapshot = firestore.collection("alumniProfiles").document(uid).get().await()
+            documentSnapshot.get("skills") as? List<String> ?: emptyList()
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    // Function to retrieve jobs that match the alumnus skills with at least 3 matching skills
+    fun fetchMatchingJobs(context: Context) {
+        viewModelScope.launch(Dispatchers.IO) {
+            _loading.value = true
+            _errorMessage.value = null
+            val uid = FirebaseAuth.getInstance().currentUser?.uid
+
+            if (uid == null) {
+                _loading.value = false
+                _errorMessage.value = "No user is currently signed in."
+                return@launch
+            }
+
+            try {
+                // Fetch alumni's skills
+                val alumniSkills = fetchAlumniSkills(uid)
+                if (alumniSkills.isEmpty()) {
+                    withContext(Dispatchers.Main) {
+                        _loading.value = false
+                        _errorMessage.value = "No skills found for the user."
+                        Toast.makeText(context, "No skills found for the user.", Toast.LENGTH_SHORT).show()
+                    }
+                    return@launch
+                }
+
+                // Query jobs that match at least one of the alumni's skills
+                val jobQuery = firestore.collection("jobs")
+                    .whereArrayContainsAny("skills", alumniSkills) // Matches jobs with any skill in alumniSkills
+
+                val result = jobQuery.get().await()
+
+                // Parse the job data into a list
+                val jobs = result.mapNotNull { it.toObject(JobData::class.java) }
+
+                // Filter jobs to ensure at least 3 skills match
+                val matchingJobs = jobs.filter { job ->
+                    val jobSkills = job.skills ?: emptyList() // Assuming "requiredSkills" is a list of skills in the job
+                    val matchingSkillCount = alumniSkills.intersect(jobSkills.toSet()).size // Get the intersection of the two lists
+                    matchingSkillCount >= 3
+                }
+
+                withContext(Dispatchers.Main) {
+                    _loading.value = false
+                    _matchedJobs.value = matchingJobs
+                    Toast.makeText(context, "Found ${matchingJobs.size} matching jobs", Toast.LENGTH_SHORT).show()
+                }
+
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    _loading.value = false
+                    _errorMessage.value = "Error fetching matching jobs: ${e.message}"
+                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
 
     fun retrieveAlumniProfiles(context: Context) {
         viewModelScope.launch(Dispatchers.IO) {

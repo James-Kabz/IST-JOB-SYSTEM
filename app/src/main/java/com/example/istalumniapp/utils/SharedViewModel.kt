@@ -22,7 +22,11 @@ class SharedViewModel : ViewModel() {
 
     private val _userRole = MutableStateFlow<String?>(null)
     val userRole: StateFlow<String?> = _userRole
+    private val _skills = MutableStateFlow<List<SkillData>>(emptyList())
+    val skills: StateFlow<List<SkillData>> = _skills
 
+    private val _loading = MutableStateFlow<Boolean>(false)
+    val loading: StateFlow<Boolean> = _loading
 //    fetch user role
 
 

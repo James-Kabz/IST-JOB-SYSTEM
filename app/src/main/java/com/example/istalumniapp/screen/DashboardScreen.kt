@@ -39,18 +39,25 @@ fun DashboardScreen(navController: NavController,profileViewModel: ProfileViewMo
     val context = LocalContext.current
     var isLoading by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
+    var loading by remember { mutableStateOf(true) }
 
 
     // Fetch user role when the composable is launched
     LaunchedEffect(Unit) {
         sharedViewModel.fetchUserRole()
 
-        if (userRole == "alumni"){
-        profileViewModel.retrieveProfilePhoto(
-            onLoading = { loading -> isLoading = loading },
-            onSuccess = { url -> profilePhotoUrl = url },
-            onFailure = { message -> Log.e("DisplayJobScreen", "Error fetching profile photo: $message") }
-        )}
+    }
+
+    LaunchedEffect(userRole) {
+        if (userRole == "alumni") {
+            profileViewModel.retrieveProfilePhoto(
+                onLoading = { loading = it },
+                onSuccess = { url -> profilePhotoUrl = url },
+                onFailure = { message ->
+                    Log.e("DisplayJobScreen", "Error fetching profile photo: $message")
+                }
+            )
+        }
     }
 
     // Check if the userRole is null, meaning it's still loading
@@ -296,14 +303,14 @@ fun DashboardTopBar(navController: NavController, userRole: String?, onLogoutCli
                         modifier = Modifier.size(40.dp)
                     )
                 }
-                IconButton(onClick = { navController.navigate(Screens.CreateProfileScreen.route) }) {
+                IconButton(onClick = { navController.navigate(Screens.ViewAlumniProfilesScreen.route) }) {
                     Icon(
-                        Icons.Filled.Person,
-                        contentDescription = "Profile",
+                        Icons.Filled.AccountCircle,
+                        contentDescription = "Manage Users",
                         modifier = Modifier.size(40.dp)
                     )
                 }
-                IconButton(onClick = { navController.navigate(Screens.DisplayJobScreen.route) }) {
+                IconButton(onClick = { navController.navigate(Screens.DisplayAlumniJobsScreen.route) }) {
                     Icon(
                         Icons.Filled.MailOutline,
                         contentDescription = "Jobs",

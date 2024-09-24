@@ -7,6 +7,7 @@ sealed class Screens(val route:String)
     data object ViewProfileScreen:Screens(route = "view_profile")
     data object CreateProfileScreen:Screens(route = "create_profile")
     data object EditProfileScreen : Screens(route = "edit_profile")
+    data object DisplayAlumniJobsScreen:Screens(route = "view_alumni_jobs")
 
 //    job screens
     data object AddSkillScreen:Screens(route = "add_skill")
@@ -18,6 +19,7 @@ sealed class Screens(val route:String)
     data object JobApplicationScreen:Screens(route = "job_application")
     data object DisplayApplicationScreen:Screens(route = "display_application{applicationId}")
     data object ViewApplicationsScreen:Screens(route = "display_applications")
+
 //    authentication screens
     data object ForgotPasswordScreen:Screens(route = "forgot_password")
     data object ISTLoginScreen:Screens(route = "login_screen")
