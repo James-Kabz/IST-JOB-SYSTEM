@@ -1,6 +1,6 @@
 package com.example.istalumniapp.utils
 
-
+import android.os.Build
 
 enum class Experience(val years: Int) {
     One_Year(1),
@@ -30,6 +30,7 @@ enum class Gender {
     Female
 }
 
+
 data class JobApplicationData(
     val applicationId: String = "",
     val jobID: String = "",
@@ -43,7 +44,8 @@ data class JobApplicationData(
     val cv: String = "",
     var companyLogo: String = "",
     var title: String = "",
-    var email: String = "",  // Use email instead of name
-    var status: String? = null,  // New field to store status
-    var feedback: String? = null // New field to store feedback
+    var email: String = "",
+    var status: String? = null,
+    var feedback: String? = null, // Automatically set the creation time
 )
+

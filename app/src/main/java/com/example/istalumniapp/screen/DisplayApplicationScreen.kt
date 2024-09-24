@@ -1,4 +1,5 @@
 package com.example.istalumniapp.screen
+
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
@@ -35,7 +36,6 @@ import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
-
 @Composable
 fun DisplayApplicationScreen(
     navController: NavController,
@@ -43,43 +43,45 @@ fun DisplayApplicationScreen(
     profileViewModel: ProfileViewModel,
     userId: String
 ) {
-    val applicationState = jobApplicationModel.applicationState.collectAsState(initial = null)
+    val applicationState = jobApplicationModel.applicationState.collectAsState(initial = emptyList())
     var showDeleteConfirmation by remember { mutableStateOf(false) }
     var applicationToDelete by remember { mutableStateOf<JobApplicationData?>(null) }
     var isSubmitting by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     var userRole by remember { mutableStateOf<String?>(null) }
-    val loading = remember { mutableStateOf(true) }
+    var loading by remember { mutableStateOf(true) } // Loading state
     var profilePhotoUrl by remember { mutableStateOf<String?>(null) }
-
     var showLogoutConfirmation by remember { mutableStateOf(false) }
+
     // Fetch applications for the current user
     LaunchedEffect(userId) {
-        jobApplicationModel.fetchApplicationsForUser(userId)
-
+        Log.d("DisplayApplicationScreen", "Fetching applications for user $userId")
+        loading = true
+        jobApplicationModel.fetchApplicationsForUser(userId) {
+            loading = false // Set loading to false after fetching is complete
+        }
     }
-    // Fetch user role and profile photo
-    LaunchedEffect(Unit) {
+
+    LaunchedEffect(userId) {
         val uid = FirebaseAuth.getInstance().currentUser?.uid
         if (uid != null) {
             val db = FirebaseFirestore.getInstance()
             val documentSnapshot = db.collection("users").document(uid).get().await()
             userRole = documentSnapshot.getString("role") ?: "alumni"
         }
+    }
 
-        if (userRole == "alumni"){
+    LaunchedEffect(userRole) {
+        if (userRole == "alumni") {
             profileViewModel.retrieveProfilePhoto(
-                onLoading = { loading.value = it },
+                onLoading = { loading = it },
                 onSuccess = { url -> profilePhotoUrl = url },
                 onFailure = { message ->
-                    Log.e(
-                        "DisplayJobScreen",
-                        "Error fetching profile photo: $message"
-                    )
-
+                    Log.e("DisplayJobScreen", "Error fetching profile photo: $message")
                 }
-            )}
+            )
+        }
     }
 
     if (showLogoutConfirmation) {
@@ -98,8 +100,8 @@ fun DisplayApplicationScreen(
             DashboardTopBar(
                 navController = navController,
                 onLogoutClick = { showLogoutConfirmation = true },
-                userRole = userRole,  // Assuming alumni role for now
-                profilePhotoUrl = profilePhotoUrl // Replace with actual profile photo URL if needed
+                userRole = userRole,
+                profilePhotoUrl = profilePhotoUrl
             )
         },
         bottomBar = {
@@ -108,98 +110,151 @@ fun DisplayApplicationScreen(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { paddingValues ->
 
-        when (val applications = applicationState.value) {
-            null -> {
-                // Show loading screen while fetching applications
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
+        Log.d("DisplayApplicationScreen", "Application state value: ${applicationState.value}")
+
+        // Show a CircularProgressIndicator while loading
+        if (loading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
             }
-            else -> {
-                // Display applications with pagination
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
-                        .padding(16.dp)
-                ) {
-
-                    item {
-                        Spacer(modifier = Modifier.height(15.dp))
-                        Text(
-                            text = "Your Applications",
-                            style = MaterialTheme.typography.headlineSmall,
-                            modifier = Modifier
-                                .padding(bottom = 8.dp)
-                        )
+        } else {
+            // Handle different states based on whether the list is null or empty
+            when {
+                applicationState.value == null -> {
+                    Log.d("DisplayApplicationScreen", "Unexpected null state.")
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(paddingValues),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("An unexpected error occurred.")
                     }
+                }
 
-                    items(applications) { application ->
-                        // Each application card with status color coding
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            elevation = CardDefaults.cardElevation(4.dp)
+                applicationState.value!!.isEmpty() -> {
+                    Log.d("DisplayApplicationScreen", "No applications found.")
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(paddingValues),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
                         ) {
-                            Column(
+                            Text(
+                                text = "You have not submitted any applications yet.",
+                                style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.padding(16.dp)
+                            )
+                            Button(onClick = {
+                                navController.navigate(Screens.DisplayAlumniJobsScreen.route)
+                            }) {
+                                Text("Browse Jobs")
+                            }
+                        }
+                    }
+                }
+
+                else -> {
+                    Log.d("DisplayApplicationScreen", "Displaying applications.")
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(paddingValues)
+                            .padding(16.dp)
+                    ) {
+                        item {
+                            Spacer(modifier = Modifier.height(15.dp))
+                            Text(
+                                text = "Your Applications",
+                                style = MaterialTheme.typography.headlineSmall,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
+                        }
+
+                        items(applicationState.value!!) { application ->
+                            // Fetch feedback for the application
+                            var feedback by remember { mutableStateOf<String?>(null) }
+                            LaunchedEffect(application.applicationId,application.userId) {
+                                jobApplicationModel.retrieveFeedback(application.applicationId,application.userId) { retrievedFeedback ->
+                                    feedback = retrievedFeedback
+                                }
+                            }
+
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                elevation = CardDefaults.cardElevation(4.dp)
                             ) {
-
-                                Image(
-                                    painter = rememberAsyncImagePainter(application.companyLogo),
-                                    contentDescription = "Company Logo",
-                                    modifier = Modifier.size(60.dp),
-                                    contentScale = ContentScale.Crop
-                                )
-                                // Application Details
-                                Text(
-                                    text = " ${application.title}",
-                                    style = MaterialTheme.typography.titleLarge
-                                )
-                                Spacer(modifier = Modifier.height(10.dp))
-                                Text("Experience: ${application.experience.years} Years", style = MaterialTheme.typography.bodyLarge)
-                                Text("Education: ${application.education}", style = MaterialTheme.typography.bodyLarge)
-                                Text("Phone: ${application.phone}", style = MaterialTheme.typography.bodyLarge)
-
-                                Spacer(modifier = Modifier.height(8.dp))
-
-                                // Status with color coding
-                                Text(
-                                    text = "Status: ${application.status ?: "Pending"}",
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = when (application.status) {
-                                        "Approved" -> Color.Green
-                                        "Rejected" -> Color.Red
-                                        else -> Color.Gray
-                                    }
-                                )
-
-                                Spacer(modifier = Modifier.height(8.dp))
-
-                                // Action Buttons
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    modifier = Modifier.fillMaxWidth()
+                                Column(
+                                    modifier = Modifier.padding(16.dp)
                                 ) {
+                                    Image(
+                                        painter = rememberAsyncImagePainter(application.companyLogo),
+                                        contentDescription = "Company Logo",
+                                        modifier = Modifier.size(60.dp),
+                                        contentScale = ContentScale.Crop
+                                    )
 
-
-                                    Spacer(modifier = Modifier.width(8.dp))
-
-                                    IconButton(onClick = {
-                                        applicationToDelete = application
-                                        showDeleteConfirmation = true
-                                    }) {
-                                        Icon(
-                                            imageVector = Icons.Default.Delete,
-                                            contentDescription = "Delete Application",
-                                            tint = Color.Red
+                                    Text(
+                                        text = " ${application.title}",
+                                        style = MaterialTheme.typography.titleLarge
+                                    )
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                    Text(
+                                        "Experience: ${application.experience.years} Years",
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                    Text(
+                                        "Education: ${application.education}",
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                    Text(
+                                        "Phone: ${application.phone}",
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = "Status: ${application.status ?: "Pending"}",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = when (application.status) {
+                                            "Approved" -> Color.Green
+                                            "Rejected" -> Color.Red
+                                            else -> Color.Gray
+                                        }
+                                    )
+                                    if (!application.feedback.isNullOrEmpty()) {
+                                        Text(
+                                            "Feedback: ${application.feedback}",
+                                            style = MaterialTheme.typography.bodyLarge
                                         )
+                                    }
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Spacer(modifier = Modifier.width(8.dp))
+
+                                        IconButton(onClick = {
+                                            applicationToDelete = application
+                                            showDeleteConfirmation = true
+                                        }) {
+                                            Icon(
+                                                imageVector = Icons.Default.Delete,
+                                                contentDescription = "Delete Application",
+                                                tint = Color.Red
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -210,7 +265,6 @@ fun DisplayApplicationScreen(
         }
     }
 
-    // Show delete confirmation dialog if needed
     if (showDeleteConfirmation && applicationToDelete != null) {
         DeleteApplicationConfirmationDialog(
             onConfirm = {

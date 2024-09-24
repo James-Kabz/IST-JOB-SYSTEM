@@ -23,6 +23,7 @@ import com.example.istalumniapp.utils.SkillData
 import java.text.DateFormat
 import java.util.Calendar
 import java.util.Date
+import java.util.UUID
 
 @Composable
 fun EditJobScreen(
@@ -76,7 +77,6 @@ fun EditJobScreen(
         }
     }
 }
-
 @Composable
 fun JobEditForm(
     jobData: JobData,
@@ -91,10 +91,11 @@ fun JobEditForm(
     var experienceLevel by remember { mutableStateOf(jobData.experienceLevel) }
     var educationLevel by remember { mutableStateOf(jobData.educationLevel) }
     var jobType by remember { mutableStateOf(jobData.jobType) }
-    var selectedSkills by remember { mutableStateOf(jobData.skills) }
+    var selectedSkills by remember { mutableStateOf(jobData.skills) }  // Initialize with jobData.skills
     var deadlineDate by remember { mutableStateOf(jobData.deadlineDate) }
     var isUpdating by remember { mutableStateOf(false) }
-
+    val allSkills by sharedViewModel.skills.collectAsState(initial = emptyList()) // Expose skills from ViewModel
+    val isLoading by sharedViewModel.loading.collectAsState()
     val context = LocalContext.current
 
     // Define a background color
@@ -167,10 +168,13 @@ fun JobEditForm(
             // Skills Selection
             SkillsSelectionField(
                 selectedSkills = selectedSkills,
-                onSkillsSelected = { selectedSkills = it },
+                onSkillsSelected = { newSkills -> selectedSkills = newSkills }, // Update selected skills
                 saveSkill = { skill ->
-                    sharedViewModel.saveSkill(skill, context)
-                }
+                    sharedViewModel.saveSkill(skill, context) // Save skill via ViewModel
+                },
+                allAvailableSkills = allSkills, // Pass all retrieved skills from Firestore
+                isLoading = isLoading, // Pass loading state to show loading indicator
+                sharedViewModel = sharedViewModel
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -225,7 +229,7 @@ fun JobEditForm(
                         experienceLevel = experienceLevel,
                         educationLevel = educationLevel,
                         jobType = jobType,
-                        skills = selectedSkills,
+                        skills = selectedSkills,  // Update with selected skills
                         deadlineDate = deadlineDate
                     )
 
@@ -267,61 +271,102 @@ fun JobEditForm(
 }
 
 
+
 @Composable
 fun SkillsSelectionField(
     selectedSkills: List<String>,
     onSkillsSelected: (List<String>) -> Unit,
-    saveSkill: (SkillData) -> Unit
+    saveSkill: (SkillData) -> Unit,
+    allAvailableSkills: List<SkillData>, // The list of all skills retrieved from Firestore
+    isLoading: Boolean, // Loading state
+    sharedViewModel: SharedViewModel
 ) {
     var expanded by remember { mutableStateOf(false) }
     var newSkill by remember { mutableStateOf("") }
-    val allSkills = remember { mutableStateListOf("Kotlin", "Java", "Android", "Firebase") }
     val context = LocalContext.current
+    var skills by remember { mutableStateOf(listOf<SkillData>()) }
+    var skillsLoading by remember { mutableStateOf(false) }
+    var skillsError by remember { mutableStateOf("") }
+    LaunchedEffect(Unit) {
+        // Fetch the skills when the Composable is first displayed
+        sharedViewModel.retrieveSkills(
+            onLoading = { skillsLoading = it },
+            onSuccess = { skills = it },
+            onFailure = { skillsError = it }
+        )
+    }
 
     Box(modifier = Modifier.fillMaxWidth()) {
         Button(onClick = { expanded = true }, modifier = Modifier.fillMaxWidth()) {
             Text(if (selectedSkills.isEmpty()) "Select Skills" else selectedSkills.joinToString(", "))
         }
+
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
-            allSkills.forEach { skill ->
-                DropdownMenuItem(
-                    onClick = {
-                        val newSkills = if (selectedSkills.contains(skill)) {
-                            selectedSkills - skill
-                        } else {
-                            selectedSkills + skill
-                        }
-                        onSkillsSelected(newSkills)
-                        expanded = false
-                    },
-                    text = { Text(skill) }
-                )
-            }
-            DropdownMenuItem(
-                onClick = { /* Do nothing */ },
-                text = {
-                    OutlinedTextField(
-                        value = newSkill,
-                        onValueChange = { newSkill = it },
-                        label = { Text("Add New Skill") }
+            if (isLoading) {
+                CircularProgressIndicator(modifier = Modifier.padding(8.dp))
+            } else {
+                // Display existing skills from Firestore
+                allAvailableSkills.forEach { skillData ->
+                    val skill = skillData.skillName
+                    DropdownMenuItem(
+                        onClick = {
+                            val newSkills = if (selectedSkills.contains(skill)) {
+                                selectedSkills - skill
+                            } else {
+                                selectedSkills + skill
+                            }
+                            onSkillsSelected(newSkills)
+                            expanded = false
+                        },
+                        text = { Text(skill) }
                     )
                 }
-            )
-            DropdownMenuItem(
-                onClick = {
-                    if (newSkill.isNotBlank() && !selectedSkills.contains(newSkill)) {
-                        val skillData = SkillData(skillID = newSkill, skillName = newSkill) // Create new SkillData
-                        saveSkill(skillData) // Save new skill to Firebase
-                        onSkillsSelected(selectedSkills + newSkill) // Update UI
-                        newSkill = "" // Reset the input field
+
+                // Input field for adding new skill
+                DropdownMenuItem(
+                    onClick = { /* Do nothing */ },
+                    text = {
+                        OutlinedTextField(
+                            value = newSkill,
+                            onValueChange = { newSkill = it },
+                            label = { Text("Add New Skill") }
+                        )
                     }
-                    expanded = false
-                },
-                text = { Text("Add Skill") }
-            )
+                )
+
+                // Option to add the new skill
+                DropdownMenuItem(
+                    onClick = {
+                        if (newSkill.isNotBlank()) {
+                            // Check if the skill already exists
+                            val skillExists = allAvailableSkills.any { it.skillName.equals(newSkill, ignoreCase = true) }
+                            if (!skillExists && !selectedSkills.contains(newSkill)) {
+                                // Generate a unique ID for the new skill
+                                val newSkillID = UUID.randomUUID().toString() // Generate a unique skill ID
+
+                                // Create new SkillData with skillID and skillName
+                                val skillData = SkillData(skillID = newSkillID, skillName = newSkill)
+
+                                // Save new skill to Firebase
+                                saveSkill(skillData)
+
+                                // Update the selected skills with the newly added skill
+                                onSkillsSelected(selectedSkills + newSkill)
+
+                                // Reset input field
+                                newSkill = ""
+                            } else {
+                                Toast.makeText(context, "Skill already exists", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                        expanded = false
+                    },
+                    text = { Text("Add Skill") }
+                )
+            }
         }
     }
 }

@@ -9,6 +9,7 @@ import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import java.util.UUID
 
 class JobApplicationModel : ViewModel() {
@@ -19,56 +20,48 @@ class JobApplicationModel : ViewModel() {
     private val _applicationState = MutableStateFlow<List<JobApplicationData>?>(null)
     val applicationState: StateFlow<List<JobApplicationData>?> = _applicationState
 
-    fun fetchApplicationsForUser(userId: String) {
+    fun fetchApplicationsForUser(userId: String, onComplete: () -> Unit = {}) {
         viewModelScope.launch {
             try {
+                _applicationState.value = emptyList()
+
                 val applicationsRef = firestore.collection("job_applications")
-
-                applicationsRef
-                    .whereEqualTo("userId", userId)  // Query by userId
+                val querySnapshot = applicationsRef
+                    .whereEqualTo("userId", userId)
                     .get()
-                    .addOnSuccessListener { querySnapshot ->
-                        val applications = querySnapshot.toObjects(JobApplicationData::class.java)
+                    .await()
 
-                        // List to store applications with job details
-                        val updatedApplications = mutableListOf<JobApplicationData>()
+                val applications = querySnapshot.toObjects(JobApplicationData::class.java)
+                val updatedApplications = mutableListOf<JobApplicationData>()
 
-                        // For each application, fetch the corresponding job details using jobID
-                        applications.forEach { application ->
-                            firestore.collection("jobs").document(application.jobID).get()
-                                .addOnSuccessListener { jobSnapshot ->
-                                    if (jobSnapshot.exists()) {
-                                        val jobTitle = jobSnapshot.getString("title") ?: ""
-                                        val companyLogo = jobSnapshot.getString("companyLogo") ?: ""
+                applications.forEach { application ->
+                    try {
+                        val jobSnapshot = firestore.collection("jobs")
+                            .document(application.jobID)
+                            .get()
+                            .await()
 
-                                        // Update the application with job details
-                                        application.title = jobTitle
-                                        application.companyLogo = companyLogo
-                                    }
-
-                                    // Add the updated application to the list
-                                    updatedApplications.add(application)
-
-                                    // Once all applications are updated, set the new state
-                                    if (updatedApplications.size == applications.size) {
-                                        _applicationState.value = updatedApplications
-                                    }
-                                }
-                                .addOnFailureListener { exception ->
-                                    Log.e("FirestoreError", "Error fetching job details", exception)
-                                }
+                        if (jobSnapshot.exists()) {
+                            application.title = jobSnapshot.getString("title") ?: ""
+                            application.companyLogo = jobSnapshot.getString("companyLogo") ?: ""
                         }
+
+                        updatedApplications.add(application)
+                    } catch (e: Exception) {
+                        Log.e("FirestoreError", "Error fetching job details", e)
                     }
-                    .addOnFailureListener { exception ->
-                        _applicationState.value = emptyList() // Handle failure with an empty list
-                        Log.e("FirestoreError", "Error fetching applications", exception)
-                    }
+                }
+
+                _applicationState.value = updatedApplications
             } catch (e: Exception) {
-                _applicationState.value = emptyList() // Catch any other exceptions
+                _applicationState.value = emptyList()
                 Log.e("ApplicationError", "Exception occurred while fetching applications", e)
+            } finally {
+                onComplete()
             }
         }
     }
+
 
 
 //    fun fetchApplicationDetails(applicationId: String) {
@@ -192,6 +185,29 @@ class JobApplicationModel : ViewModel() {
             }
             .addOnFailureListener { exception ->
                 onResult(false, "Failed to send feedback: ${exception.message}")  // Handle failure
+            }
+    }
+
+
+    // Retrieve feedback for a specific job application by its ID
+    fun retrieveFeedback(applicationId: String, userId: String, onResult: (String?) -> Unit) {
+        firestore.collection("job_applications")
+            .whereEqualTo("applicationId", applicationId) // Ensure correct application
+            .whereEqualTo("userId", userId) // Ensure feedback belongs to the specific user
+            .get()
+            .addOnSuccessListener { querySnapshot ->
+                if (!querySnapshot.isEmpty) {
+                    // Assume only one matching document (or take the first one)
+                    val document = querySnapshot.documents.firstOrNull()
+                    val feedback = document?.getString("feedback")
+                    onResult(feedback) // Return the feedback if found
+                } else {
+                    onResult(null) // No matching document or no feedback
+                }
+            }
+            .addOnFailureListener { exception ->
+                Log.e("FirestoreError", "Failed to retrieve feedback: ${exception.message}")
+                onResult(null) // Return null on failure
             }
     }
 

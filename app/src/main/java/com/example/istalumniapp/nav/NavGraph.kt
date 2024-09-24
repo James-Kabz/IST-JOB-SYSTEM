@@ -14,6 +14,7 @@ import com.example.istalumniapp.screen.AddJobScreen
 import com.example.istalumniapp.screen.AddSkillScreen
 import com.example.istalumniapp.screen.CreateProfileScreen
 import com.example.istalumniapp.screen.DashboardScreen
+import com.example.istalumniapp.screen.DisplayAlumniJobsScreen
 import com.example.istalumniapp.screen.DisplayApplicationScreen
 import com.example.istalumniapp.screen.DisplayJobScreen
 import com.example.istalumniapp.screen.EditJobScreen
@@ -81,10 +82,11 @@ fun NavGraph(
         composable(
             route = Screens.ViewApplicationsScreen.route
         ) {
-            ViewApplicationScreen(navController = navController, applicationModel = jobApplicationModel )
+            ViewApplicationScreen(
+                navController = navController,
+                applicationModel = jobApplicationModel
+            )
         }
-
-
 
 
 //        PROFILE SCREENS
@@ -105,23 +107,34 @@ fun NavGraph(
 //        view profile
         composable(
             route = Screens.ViewAlumniProfilesScreen.route
-        ){
-            ViewAlumniProfilesScreen(navController = navController ,profileViewModel = profileViewModel)
+        ) {
+            ViewAlumniProfilesScreen(
+                navController = navController,
+                profileViewModel = profileViewModel
+            )
         }
         //        view profile
         composable(
             route = Screens.ViewProfileScreen.route
-        ){
-            ViewProfileScreen(navController = navController ,profileViewModel = profileViewModel)
+        ) {
+            ViewProfileScreen(navController = navController, profileViewModel = profileViewModel)
         }
 //      create  profile
         composable(
             route = Screens.CreateProfileScreen.route
         ) {
-            CreateProfileScreen(navController = navController,profileViewModel = profileViewModel)
+            CreateProfileScreen(navController = navController, profileViewModel = profileViewModel)
         }
 
 //        JOB SCREENS
+
+//        job matching
+
+        composable(
+            route = Screens.DisplayAlumniJobsScreen.route
+        ) {
+            DisplayAlumniJobsScreen(navController = navController, sharedViewModel = sharedViewModel , profileViewModel = profileViewModel)
+        }
 
 //        edit job screen
         composable(
@@ -151,7 +164,11 @@ fun NavGraph(
         composable(
             route = Screens.DisplayJobScreen.route
         ) {
-            DisplayJobScreen(navController = navController, sharedViewModel = sharedViewModel,profileViewModel = profileViewModel)
+            DisplayJobScreen(
+                navController = navController,
+                sharedViewModel = sharedViewModel,
+                profileViewModel = profileViewModel
+            )
         }
 //        addSkills
         composable(
@@ -185,7 +202,7 @@ fun NavGraph(
         composable(
             route = Screens.DashboardScreen.route
         ) {
-            DashboardScreen(navController = navController,profileViewModel =profileViewModel)
+            DashboardScreen(navController = navController, profileViewModel = profileViewModel)
         }
 
 
