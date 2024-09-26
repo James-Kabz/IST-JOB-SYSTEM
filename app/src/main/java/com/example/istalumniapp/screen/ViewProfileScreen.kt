@@ -35,7 +35,6 @@ import com.example.istalumniapp.utils.AlumniProfileData
 import com.example.istalumniapp.utils.ProfileViewModel
 
 
-
 @Composable
 fun ViewProfileScreen(navController: NavController, profileViewModel: ProfileViewModel) {
     val context = LocalContext.current
@@ -50,7 +49,7 @@ fun ViewProfileScreen(navController: NavController, profileViewModel: ProfileVie
         profileViewModel.retrieveProfilePhoto(
             onLoading = { loading.value = it },
             onSuccess = { url ->
-                profilePhotoUrl.value = url.toString()
+                profilePhotoUrl.value = url
                 Log.d("ViewProfileScreen", "Retrieved profile photo URL: $url")
             },
             onFailure = { error ->

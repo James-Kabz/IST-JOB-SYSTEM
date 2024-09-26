@@ -18,7 +18,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
@@ -26,6 +25,7 @@ import com.example.istalumniapp.nav.Screens
 import com.example.istalumniapp.utils.AlumniProfileData
 import com.example.istalumniapp.utils.ProfileViewModel
 import com.example.istalumniapp.utils.SkillData
+import java.util.UUID
 
 @Composable
 fun EditProfileScreen(
@@ -71,7 +71,7 @@ fun EditProfileScreen(
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Retrieving Jobs, please wait...",
+                text = "Please wait...",
                 color = colorScheme.onBackground,
                 style = MaterialTheme.typography.bodyMedium
             )
@@ -195,17 +195,22 @@ fun EditProfileScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Skills Selection Field
+            // Skills selection (dynamic)
             SkillsSelection(
                 selectedSkills = profileData.skills,
-                onSkillsSelected = { updatedSkills ->
-                    profileData = profileData.copy(skills = updatedSkills)
+                onSkillsSelected = { updatedSkills -> profileData = profileData.copy(skills = updatedSkills) },
+                saveSkill = { skill ->
+                    profileViewModel.saveSkill(skill, context) // Save skill via ViewModel
                 },
-                saveSkill = { skillName ->
-                    val newSkill = SkillData(skillID = skillName, skillName = skillName) // Assuming SkillData has these fields
-                    saveSkill(newSkill, context)
+                retrieveSkills = { onSuccess, onFailure ->
+                    profileViewModel.retrieveSkills(
+                        onLoading = { /* Optionally handle loading state */ },
+                        onSuccess = onSuccess,
+                        onFailure = onFailure
+                    )
                 }
             )
+
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -230,41 +235,57 @@ fun EditProfileScreen(
         }
     }
 }
+
+
+
 @Composable
 fun SkillsSelection(
     selectedSkills: List<String>,
     onSkillsSelected: (List<String>) -> Unit,
-    saveSkill: (String) -> Unit // Accept the saveSkill function
+    saveSkill: (SkillData) -> Unit,  // Fix: saveSkill expects SkillData, not String
+    retrieveSkills: (onSuccess: (List<SkillData>) -> Unit, onFailure: (String) -> Unit) -> Unit
 ) {
-    val allSkills = remember { mutableStateListOf("Kotlin", "Java", "Android", "Firebase") }
+    val context = LocalContext.current
+    var allSkills by remember { mutableStateOf<List<SkillData>>(emptyList()) }
     var expanded by remember { mutableStateOf(false) }
     var newSkill by remember { mutableStateOf("") }
 
+    // Fetch existing skills from Firestore
+    LaunchedEffect(Unit) {
+        retrieveSkills({ skills ->
+            allSkills = skills  // Store the retrieved skills
+        }, { message ->
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        })
+    }
+
     Box(modifier = Modifier.fillMaxWidth()) {
         Button(onClick = { expanded = true }, modifier = Modifier.fillMaxWidth()) {
-            Text(
-                text = if (selectedSkills.isEmpty()) "Select Skills" else selectedSkills.joinToString(", ")
-            )
+            Text(if (selectedSkills.isEmpty()) "Select Skills" else selectedSkills.joinToString(", "))
         }
+
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
-            allSkills.forEach { skill ->
+            // Display existing skills from Firestore
+            allSkills.forEach { skillData ->
+                val skillName = skillData.skillName
                 DropdownMenuItem(
                     onClick = {
-                        val newSkills = if (selectedSkills.contains(skill)) {
-                            selectedSkills - skill
+                        val updatedSkills = if (selectedSkills.contains(skillName)) {
+                            selectedSkills - skillName
                         } else {
-                            selectedSkills + skill
+                            selectedSkills + skillName
                         }
-                        onSkillsSelected(newSkills)
+                        onSkillsSelected(updatedSkills)
                         expanded = false
                     },
-                    text = { Text(skill) }
+                    text = { Text(skillName) }
                 )
             }
-            // Add a text field for adding new skills
+
+            // Add new skill input field
             DropdownMenuItem(
                 onClick = { /* Do nothing */ },
                 text = {
@@ -272,29 +293,41 @@ fun SkillsSelection(
                         value = newSkill,
                         onValueChange = { newSkill = it },
                         label = { Text("Add New Skill") },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
             )
+
             DropdownMenuItem(
                 onClick = {
-                    if (newSkill.isNotBlank() && !selectedSkills.contains(newSkill)) {
-                        onSkillsSelected(selectedSkills + newSkill)
-                        saveSkill(newSkill) // Call saveSkill to save the new skill
-                        newSkill = ""
+                    if (newSkill.isNotBlank()) {
+                        val skillExists = allSkills.any { it.skillName.equals(newSkill, ignoreCase = true) }
+
+
+                        if (!skillExists && !selectedSkills.contains(newSkill)) {
+
+                            val newSkillID = UUID.randomUUID().toString() // Generate a unique skill ID
+
+
+                            val newSkillData = SkillData(skillID = newSkillID, skillName = newSkill)
+
+                            saveSkill(newSkillData)
+
+                            onSkillsSelected(selectedSkills + newSkill)
+
+                            newSkill = ""
+                        } else {
+                            Toast.makeText(context, "Skill already exists", Toast.LENGTH_SHORT).show()
+                        }
                     }
+
                     expanded = false
                 },
-                text = {
-                    Text(
-                        text = "Add Skill",
-                        color = colorScheme.primary // Set your desired color here
-                    )
-                }
+                text = { Text("Add Skill") }
             )
-
-
 
         }
     }
 }
+
+

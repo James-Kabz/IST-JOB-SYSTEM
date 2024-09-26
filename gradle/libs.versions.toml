@@ -28,6 +28,7 @@ firebaseAppcheckDebug = "18.0.0"
 accompanist-coil = { module = "com.google.accompanist:accompanist-coil", version.ref = "accompanistCoil" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferences" }
+androidx-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" }
 firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }

@@ -191,6 +191,7 @@ class ProfileViewModel :ViewModel()  {
             try {
                 uploadProfilePhoto(uid, it).also { downloadUrl ->
                     // Save the download URL to Firestore instead of the local path
+
                     alumniProfileData.copy(profilePhotoUri = downloadUrl)
                 }
             } catch (e: Exception) {
