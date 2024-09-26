@@ -51,6 +51,7 @@ android {
 }
 
 dependencies {
+    implementation(libs.androidx.material.icons.extended)
     implementation (libs.androidx.datastore.preferences)
     implementation(libs.androidx.activity.compose)
     implementation(libs.accompanist.coil)

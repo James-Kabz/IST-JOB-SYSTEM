@@ -1,6 +1,5 @@
 package com.example.istalumniapp.nav
 
-import android.util.Log
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,10 +26,8 @@ import com.example.istalumniapp.screen.ViewAlumniProfilesScreen
 import com.example.istalumniapp.screen.ViewApplicationScreen
 import com.example.istalumniapp.screen.ViewProfileScreen
 import com.example.istalumniapp.utils.JobApplicationModel
-import com.example.istalumniapp.utils.JobData
 import com.example.istalumniapp.utils.ProfileViewModel
 import com.example.istalumniapp.utils.SharedViewModel
-import com.example.istalumniapp.utils.SkillData
 
 
 @Composable
