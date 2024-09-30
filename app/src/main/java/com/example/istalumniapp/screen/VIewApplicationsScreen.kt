@@ -18,6 +18,8 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.istalumniapp.utils.JobApplicationData
 import com.example.istalumniapp.utils.JobApplicationModel
 import com.example.istalumniapp.nav.Screens
+import com.example.istalumniapp.utils.NotificationViewModel
+import com.example.istalumniapp.utils.SharedViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
@@ -27,7 +29,8 @@ import kotlinx.coroutines.tasks.await
 @Composable
 fun ViewApplicationScreen(
     navController: NavController,
-    applicationModel: JobApplicationModel
+    applicationModel: JobApplicationModel,
+    notificationViewModel: NotificationViewModel
 ) {
     val applicationState = remember { mutableStateOf<List<JobApplicationData>?>(null) }
     var currentPage by remember { mutableIntStateOf(0) }
@@ -81,7 +84,7 @@ fun ViewApplicationScreen(
             )
         },
         bottomBar = {
-            DashboardBottomBar(navController = navController, userRole = userRole)
+            DashboardBottomBar(navController = navController, userRole = userRole , notificationViewModel = notificationViewModel)
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { paddingValues ->

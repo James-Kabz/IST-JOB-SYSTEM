@@ -1,9 +1,16 @@
 package com.example.istalumniapp.utils
 
+import android.annotation.SuppressLint
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
+import android.os.Build
+import android.util.Log
 import android.widget.Toast
+import androidx.core.app.NotificationCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.istalumniapp.R
 import com.example.istalumniapp.screen.auth
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -15,6 +22,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import java.util.UUID
 
 class SharedViewModel : ViewModel() {
     private val firestore = FirebaseFirestore.getInstance()
@@ -27,10 +35,9 @@ class SharedViewModel : ViewModel() {
 
     private val _loading = MutableStateFlow<Boolean>(false)
     val loading: StateFlow<Boolean> = _loading
+
+
 //    fetch user role
-
-
-
     init {
         fetchUserRole()
     }
@@ -48,19 +55,25 @@ class SharedViewModel : ViewModel() {
     }
 
 
-    // Function to save job data
+
     fun saveJob(
         jobData: JobData,
-        context: Context
+        context: Context,
+        onJobSaved: () -> Unit
     ) = CoroutineScope(Dispatchers.IO).launch {
         val firestoreRef = firestore.collection("jobs").document(jobData.jobID)
+
         try {
             firestoreRef.set(jobData)
                 .addOnSuccessListener {
+                    // Notify the user that the job was successfully posted
                     CoroutineScope(Dispatchers.Main).launch {
-                        Toast.makeText(context, "Job Posted Successfully", Toast.LENGTH_SHORT)
-                            .show()
+                        notifyAlumniWithMatchingSkills(jobData, context)
+                        Toast.makeText(context, "Job Posted Successfully", Toast.LENGTH_SHORT).show()
+                        onJobSaved()
                     }
+
+
                 }
                 .addOnFailureListener { e ->
                     CoroutineScope(Dispatchers.Main).launch {
@@ -73,6 +86,76 @@ class SharedViewModel : ViewModel() {
             }
         }
     }
+
+    private suspend fun notifyAlumniWithMatchingSkills(jobData: JobData, context: Context) {
+        try {
+            // Fetch all alumni profiles
+            val alumniSnapshot = firestore.collection("alumniProfiles").get().await()
+            val alumniList = alumniSnapshot.toObjects(AlumniProfileData::class.java)
+
+            // Iterate over all alumni profiles and match skills
+            alumniList.forEach { alumniProfile ->
+                val matchingSkillCount = alumniProfile.skills.intersect(jobData.skills.toSet()).size
+                if (matchingSkillCount >= 3) {
+                    Log.d("SkillMatch", "Alumni ${alumniProfile.fullName} has matching skills")
+                    sendNotificationToAlumni(alumniProfile.profileID, jobData, context)
+                }
+            }
+        } catch (e: Exception) {
+            withContext(Dispatchers.Main) {
+                Toast.makeText(context, "Error notifying alumni: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+
+    private fun sendNotificationToAlumni(profileID: String, jobData: JobData, context: Context) {
+        // Save the notification in Firestore
+        val notificationData = NotificationData(
+            id = UUID.randomUUID().toString(),
+            profileID =   profileID,
+            title = "New Job Matches Your Skills!",
+            message = "A job titled \"${jobData.title}\" matches your skills.",
+            timestamp = System.currentTimeMillis(),
+            read = false
+        )
+
+        firestore.collection("notifications")
+            .document(notificationData.id)
+            .set(notificationData)
+            .addOnSuccessListener {
+                // Create a NotificationManager
+                val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                Log.d("Firestore", "Notification saved successfully")
+                // Create the notification channel (for Android 8+)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    val channel = NotificationChannel(
+                        "job_channel",
+                        "Job Notifications",
+                        NotificationManager.IMPORTANCE_DEFAULT
+                    )
+                    notificationManager.createNotificationChannel(channel)
+                }
+
+                // Create the notification
+                val notification = NotificationCompat.Builder(context, "job_channel")
+                    .setSmallIcon(R.drawable.baseline_notifications_none_24) // Use your own icon
+                    .setContentTitle(notificationData.title)
+                    .setContentText(notificationData.message)
+                    .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                    .build()
+
+                // Use a unique ID for each notification
+                notificationManager.notify(profileID.hashCode(), notification)
+            }
+            .addOnFailureListener { e ->
+                Log.e("FirestoreError", "Failed to save notification: ${e.message}")
+                Toast.makeText(context, "Failed to send notification: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+
+
 
 
     // Your editJob method remains unchanged

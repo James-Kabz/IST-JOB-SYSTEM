@@ -51,6 +51,11 @@ android {
 }
 
 dependencies {
+
+    implementation (libs.material3)
+    // In build.gradle (app)
+    implementation (platform(libs.firebase.bom.v3120))
+    implementation (libs.firebase.messaging)
     implementation(libs.androidx.material.icons.extended)
     implementation (libs.androidx.datastore.preferences)
     implementation(libs.androidx.activity.compose)
@@ -79,6 +84,8 @@ dependencies {
     implementation(libs.androidx.ui.android)
     implementation(libs.androidx.ui.text.google.fonts)
     implementation(libs.firebase.appcheck.debug)
+    implementation(libs.firebase.messaging.ktx)
+    implementation(libs.androidx.runtime.livedata)
     testImplementation(libs.junit)
 
     androidTestImplementation(libs.androidx.junit)

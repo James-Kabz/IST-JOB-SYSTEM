@@ -63,32 +63,6 @@ class JobApplicationModel : ViewModel() {
     }
 
 
-
-//    fun fetchApplicationDetails(applicationId: String) {
-//        viewModelScope.launch {
-//            try {
-//                val firestore = FirebaseFirestore.getInstance()
-//                val applicationRef = firestore.collection("job_applications").document(applicationId)
-//
-//                applicationRef.get().addOnSuccessListener { documentSnapshot ->
-//                    if (documentSnapshot.exists()) {
-//                        val applicationData = documentSnapshot.toObject(JobApplicationData::class.java)
-//                        _applicationState.value = applicationData
-//                    } else {
-//                        _applicationState.value = null // No application found
-//                    }
-//                }.addOnFailureListener { exception ->
-//                    // Handle any errors that occur
-//                    _applicationState.value = null
-//                    Log.e("FirestoreError", "Error fetching application details", exception)
-//                }
-//            } catch (e: Exception) {
-//                _applicationState.value = null
-//                Log.e("ApplicationError", "Exception occurred while fetching application", e)
-//            }
-//        }
-//    }
-
     // Function to save the job application
     fun saveApplication(
         jobId: String,

@@ -34,6 +34,7 @@ import coil.compose.rememberImagePainter
 import coil.request.ImageRequest
 import com.example.istalumniapp.nav.Screens
 import com.example.istalumniapp.utils.JobData
+import com.example.istalumniapp.utils.NotificationViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
@@ -42,7 +43,8 @@ import kotlinx.coroutines.tasks.await
 fun DisplayAlumniJobsScreen(
     navController: NavController,
     profileViewModel: ProfileViewModel,
-    sharedViewModel: SharedViewModel
+    sharedViewModel: SharedViewModel,
+    notificationViewModel: NotificationViewModel
 ) {
     var matchedJobs by remember { mutableStateOf<List<JobData>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
@@ -116,7 +118,7 @@ fun DisplayAlumniJobsScreen(
             )
         },
         bottomBar = {
-            DashboardBottomBar(navController = navController, userRole = userRole)
+            DashboardBottomBar(navController = navController, userRole = userRole, notificationViewModel = notificationViewModel)
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { paddingValues ->

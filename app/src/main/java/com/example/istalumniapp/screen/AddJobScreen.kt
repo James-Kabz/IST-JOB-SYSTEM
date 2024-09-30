@@ -253,7 +253,7 @@ fun AddJobScreen(navController: NavController, sharedViewModel: SharedViewModel)
                                 skills = selectedSkills,
                                 deadlineDate = deadlineDate
                             )
-                            sharedViewModel.saveJob(jobData = jobData, context = context)
+                            sharedViewModel.saveJob(jobData = jobData, context = context, onJobSaved = { Unit })
                             isSubmitting = false
                             navController.popBackStack() // Go back after submitting
                         }

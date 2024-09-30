@@ -26,7 +26,9 @@ import coil.request.ImageRequest
 import com.example.istalumniapp.R
 import com.example.istalumniapp.nav.Screens
 import com.example.istalumniapp.utils.AlumniProfileData
+import com.example.istalumniapp.utils.NotificationViewModel
 import com.example.istalumniapp.utils.ProfileViewModel
+import com.example.istalumniapp.utils.SharedViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
@@ -34,7 +36,8 @@ import kotlinx.coroutines.tasks.await
 @Composable
 fun ViewAlumniProfilesScreen(
     navController: NavController,
-    profileViewModel: ProfileViewModel
+    profileViewModel: ProfileViewModel,
+    notificationViewModel: NotificationViewModel
 ) {
     val alumniProfiles by profileViewModel.alumniProfiles.collectAsState(initial = emptyList())
     val loading by profileViewModel.loading.collectAsState(initial = true)
@@ -91,7 +94,7 @@ fun ViewAlumniProfilesScreen(
             )
         },
         bottomBar = {
-            DashboardBottomBar(navController = navController, userRole = userRole)
+            DashboardBottomBar(navController = navController, userRole = userRole, notificationViewModel = notificationViewModel)
         }
     ) { paddingValues ->
         Box(

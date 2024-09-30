@@ -23,6 +23,7 @@ import coil.compose.rememberImagePainter
 import coil.request.ImageRequest
 import com.example.istalumniapp.R
 import com.example.istalumniapp.nav.Screens
+import com.example.istalumniapp.utils.NotificationViewModel
 import com.example.istalumniapp.utils.ProfileViewModel
 import com.example.istalumniapp.utils.SharedViewModel
 import com.google.firebase.auth.FirebaseAuth
@@ -30,7 +31,11 @@ import com.google.firebase.auth.FirebaseAuth
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DashboardScreen(navController: NavController,profileViewModel: ProfileViewModel, sharedViewModel: SharedViewModel = viewModel()) {
+fun DashboardScreen(
+    navController: NavController,
+    profileViewModel: ProfileViewModel,
+    notificationViewModel: NotificationViewModel,
+    sharedViewModel: SharedViewModel = viewModel()) {
     // Observe the user role from the ViewModel
     val userRole by sharedViewModel.userRole.collectAsState()
     var profilePhotoUrl by remember { mutableStateOf<String?>(null) }
@@ -57,6 +62,8 @@ fun DashboardScreen(navController: NavController,profileViewModel: ProfileViewMo
                     Log.e("DisplayJobScreen", "Error fetching profile photo: $message")
                 }
             )
+
+            notificationViewModel.fetchNotifications()
         }
     }
 
@@ -92,7 +99,7 @@ fun DashboardScreen(navController: NavController,profileViewModel: ProfileViewMo
                 )
             },
             bottomBar = {
-                DashboardBottomBar(navController = navController, userRole = userRole)
+                DashboardBottomBar(navController = navController, userRole = userRole, notificationViewModel = notificationViewModel)
             },
             snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
         ) { paddingValues ->
@@ -130,7 +137,7 @@ fun DashboardScreen(navController: NavController,profileViewModel: ProfileViewMo
 
 
 @Composable
-fun DashboardBottomBar(navController: NavController, userRole: String?) {
+fun DashboardBottomBar(navController: NavController,notificationViewModel: NotificationViewModel, userRole: String?) {
     BottomAppBar(
         containerColor = MaterialTheme.colorScheme.onPrimary
     ) {
@@ -143,7 +150,7 @@ fun DashboardBottomBar(navController: NavController, userRole: String?) {
 //                Icon(Icons.Filled.Home, contentDescription = "Home", modifier = Modifier.size(40.dp))
 //            }
             when (userRole) {
-                "alumni" -> AlumniDashboard(navController = navController)
+                "alumni" -> AlumniDashboard(navController = navController , notificationViewModel =  notificationViewModel)
                 "admin" -> AdminDashboard(navController = navController)
             }
         }
@@ -266,60 +273,82 @@ fun DashboardTopBar(navController: NavController, userRole: String?, onLogoutCli
     }
 
 
-    @Composable
-    fun AlumniDashboard(navController: NavController) {
-        BottomAppBar(
-            containerColor = MaterialTheme.colorScheme.onPrimary
+@Composable
+fun AlumniDashboard(navController: NavController, notificationViewModel: NotificationViewModel) {
+    // Assume we have a live data or state holding the number of unread notifications
+    val unreadNotificationsCount by notificationViewModel.unreadNotificationCount.collectAsState(0)
+
+    BottomAppBar(
+        containerColor = MaterialTheme.colorScheme.onPrimary
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceAround,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = { navController.navigate(Screens.DashboardScreen.route) }) {
-                    Icon(
-                        Icons.Filled.Home,
-                        contentDescription = "Home",
-                        modifier = Modifier.size(40.dp)
-                    )
-                }
-                IconButton(onClick = { /* TODO: Handle Notifications */ }) {
+            IconButton(onClick = { navController.navigate(Screens.DashboardScreen.route) }) {
+                Icon(
+                    Icons.Filled.Home,
+                    contentDescription = "Home",
+                    modifier = Modifier.size(40.dp)
+                )
+            }
+            Box {
+                IconButton(onClick = {
+                    navController.navigate(Screens.NotificationsScreen.route)  // Navigate to the notifications screen
+                }) {
                     Icon(
                         Icons.Filled.Notifications,
                         contentDescription = "Notifications",
                         modifier = Modifier.size(40.dp)
                     )
                 }
-                IconButton(onClick = {
-                    val currentUser = FirebaseAuth.getInstance().currentUser
-                    currentUser?.let {
-                        val userId = it.uid  // Get the current user's ID
-                        navController.navigate("${Screens.DisplayApplicationScreen.route}/$userId")
-                    }
-                }) {
-                    Icon(
-                        Icons.Filled.Star,
-                        contentDescription = "View Applications",
-                        modifier = Modifier.size(40.dp)
-                    )
+                // Always show the badge, even if the count is 0
+                Badge(
+                    containerColor = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.align(Alignment.TopEnd)
+                ) {
+                    Text(unreadNotificationsCount.toString())
                 }
-                IconButton(onClick = { navController.navigate(Screens.ViewAlumniProfilesScreen.route) }) {
-                    Icon(
-                        Icons.Filled.AccountCircle,
-                        contentDescription = "Manage Users",
-                        modifier = Modifier.size(40.dp)
-                    )
+            }
+
+
+
+            IconButton(onClick = {
+                val currentUser = FirebaseAuth.getInstance().currentUser
+                currentUser?.let {
+                    val userId = it.uid  // Get the current user's ID
+                    navController.navigate("${Screens.DisplayApplicationScreen.route}/$userId")
                 }
-                IconButton(onClick = { navController.navigate(Screens.DisplayAlumniJobsScreen.route) }) {
-                    Icon(
-                        Icons.Filled.MailOutline,
-                        contentDescription = "Jobs",
-                        modifier = Modifier.size(40.dp)
-                    )
-                }
+            }) {
+                Icon(
+                    Icons.Filled.Star,
+                    contentDescription = "View Applications",
+                    modifier = Modifier.size(40.dp)
+                )
+            }
+
+            IconButton(onClick = { navController.navigate(Screens.ViewAlumniProfilesScreen.route) }) {
+                Icon(
+                    Icons.Filled.AccountCircle,
+                    contentDescription = "Manage Users",
+                    modifier = Modifier.size(40.dp)
+                )
+            }
+
+            IconButton(onClick = { navController.navigate(Screens.DisplayAlumniJobsScreen.route) }) {
+                Icon(
+                    Icons.Filled.MailOutline,
+                    contentDescription = "Jobs",
+                    modifier = Modifier.size(40.dp)
+                )
             }
         }
     }
+}
+
+
+
 
     @Composable
     fun AdminDashboard(navController: NavController) {
