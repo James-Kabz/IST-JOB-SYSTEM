@@ -30,7 +30,9 @@ import androidx.compose.runtime.*
 import android.util.Log
 import com.example.istalumniapp.nav.Screens
 import com.example.istalumniapp.utils.JobApplicationData
+import com.example.istalumniapp.utils.NotificationViewModel
 import com.example.istalumniapp.utils.ProfileViewModel
+import com.example.istalumniapp.utils.SharedViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
@@ -41,6 +43,8 @@ fun DisplayApplicationScreen(
     navController: NavController,
     jobApplicationModel: JobApplicationModel,
     profileViewModel: ProfileViewModel,
+    sharedViewModel: SharedViewModel,
+    notificationViewModel: NotificationViewModel,
     userId: String
 ) {
     val applicationState = jobApplicationModel.applicationState.collectAsState(initial = emptyList())
@@ -105,7 +109,7 @@ fun DisplayApplicationScreen(
             )
         },
         bottomBar = {
-            DashboardBottomBar(navController = navController, userRole = userRole)
+            DashboardBottomBar(navController = navController, userRole = userRole, notificationViewModel = notificationViewModel)
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { paddingValues ->

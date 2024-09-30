@@ -22,10 +22,12 @@ import com.example.istalumniapp.screen.ForgotPasswordScreen
 import com.example.istalumniapp.screen.ISTLoginScreen
 import com.example.istalumniapp.screen.ISTRegisterScreen
 import com.example.istalumniapp.screen.JobApplicationScreen
+import com.example.istalumniapp.screen.NotificationScreen
 import com.example.istalumniapp.screen.ViewAlumniProfilesScreen
 import com.example.istalumniapp.screen.ViewApplicationScreen
 import com.example.istalumniapp.screen.ViewProfileScreen
 import com.example.istalumniapp.utils.JobApplicationModel
+import com.example.istalumniapp.utils.NotificationViewModel
 import com.example.istalumniapp.utils.ProfileViewModel
 import com.example.istalumniapp.utils.SharedViewModel
 
@@ -35,12 +37,27 @@ fun NavGraph(
     navController: NavHostController,
     sharedViewModel: SharedViewModel,
     profileViewModel: ProfileViewModel,
-    jobApplicationModel: JobApplicationModel
+    jobApplicationModel: JobApplicationModel,
+    notificationViewModel: NotificationViewModel
 ) {
     NavHost(
         navController = navController,
         startDestination = Screens.ISTLoginScreen.route
     ) {
+
+
+//      NOTIFICATIONS SCREEN
+
+        composable(
+            route = Screens.NotificationsScreen.route
+        ) {
+            NotificationScreen(
+                notificationViewModel = notificationViewModel,
+                navController = navController ,
+                sharedViewModel = sharedViewModel,
+                profileViewModel = profileViewModel
+            )
+        }
 
 //        JOB APPLICATION SCREENS
         composable(
@@ -71,6 +88,8 @@ fun NavGraph(
                 navController = navController,
                 jobApplicationModel = viewModel(),
                 profileViewModel,
+                sharedViewModel,
+                notificationViewModel,
                 userId = userId // Pass userId instead of applicationId
             )
         }
@@ -81,7 +100,8 @@ fun NavGraph(
         ) {
             ViewApplicationScreen(
                 navController = navController,
-                applicationModel = jobApplicationModel
+                applicationModel = jobApplicationModel,
+                notificationViewModel
             )
         }
 
@@ -107,7 +127,8 @@ fun NavGraph(
         ) {
             ViewAlumniProfilesScreen(
                 navController = navController,
-                profileViewModel = profileViewModel
+                profileViewModel = profileViewModel,
+                notificationViewModel
             )
         }
         //        view profile
@@ -130,7 +151,12 @@ fun NavGraph(
         composable(
             route = Screens.DisplayAlumniJobsScreen.route
         ) {
-            DisplayAlumniJobsScreen(navController = navController, sharedViewModel = sharedViewModel , profileViewModel = profileViewModel)
+            DisplayAlumniJobsScreen(
+                navController = navController,
+                sharedViewModel = sharedViewModel,
+                profileViewModel = profileViewModel,
+                notificationViewModel = notificationViewModel
+            )
         }
 
 //        edit job screen
@@ -164,7 +190,8 @@ fun NavGraph(
             DisplayJobScreen(
                 navController = navController,
                 sharedViewModel = sharedViewModel,
-                profileViewModel = profileViewModel
+                profileViewModel = profileViewModel,
+                notificationViewModel
             )
         }
 //        addSkills
@@ -199,7 +226,11 @@ fun NavGraph(
         composable(
             route = Screens.DashboardScreen.route
         ) {
-            DashboardScreen(navController = navController, profileViewModel = profileViewModel)
+            DashboardScreen(
+                navController = navController,
+                profileViewModel = profileViewModel,
+                notificationViewModel
+            )
         }
 
 

@@ -4,6 +4,10 @@ import android.annotation.SuppressLint
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -30,6 +34,7 @@ import coil.compose.rememberImagePainter
 import coil.request.ImageRequest
 import com.example.istalumniapp.nav.Screens
 import com.example.istalumniapp.utils.JobData
+import com.example.istalumniapp.utils.NotificationViewModel
 import com.example.istalumniapp.utils.ProfileViewModel
 import com.example.istalumniapp.utils.SharedViewModel
 import com.google.firebase.auth.FirebaseAuth
@@ -43,7 +48,8 @@ import java.time.ZoneId
 fun DisplayJobScreen(
     navController: NavController,
     sharedViewModel: SharedViewModel,
-    profileViewModel: ProfileViewModel
+    profileViewModel: ProfileViewModel,
+    notificationViewModel: NotificationViewModel
 ) {
     var jobs by remember { mutableStateOf<List<JobData>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
@@ -109,7 +115,7 @@ fun DisplayJobScreen(
             )
         },
         bottomBar = {
-            DashboardBottomBar(navController = navController, userRole = userRole)
+            DashboardBottomBar(navController = navController, userRole = userRole, notificationViewModel = notificationViewModel)
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }   // Add SnackbarHost
     ) { paddingValues ->
@@ -151,7 +157,6 @@ fun DisplayJobScreen(
                             horizontalArrangement = Arrangement.Center,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(10.dp)
                         ) {
                             Button(onClick = { navController.navigate(Screens.AddJobScreen.route) }) {
                                 Text(text = "Add Job")
@@ -249,7 +254,7 @@ fun LogoutConfirm(onConfirm: () -> Unit, onDismiss: () -> Unit) {
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
-@SuppressLint("NewApi")
+@SuppressLint("NewApi", "SuspiciousIndentation")
 @Composable
 fun JobItem(
     job: JobData,
@@ -264,16 +269,25 @@ fun JobItem(
     val currentDate = LocalDate.now()
     val deadlineDate = job.deadlineDate?.toInstant()?.atZone(ZoneId.systemDefault())?.toLocalDate()
 
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp)),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(4.dp)
-    ) {
-        Column(modifier = Modifier.padding(10.dp)) {
+    val color by animateColorAsState(
+        targetValue = if (isExpanded) MaterialTheme.colorScheme.primaryContainer
+        else MaterialTheme.colorScheme.onPrimary,
+        label = "",
+    )
+
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .animateContentSize(
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioLowBouncy,
+                        stiffness = Spring.StiffnessLow
+                    )
+                )
+                .background(color = color)
+        ) {
             if (userRole == "admin") {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -306,6 +320,7 @@ fun JobItem(
             }
 
             Text(
+                modifier = Modifier.padding(10.dp),
                 text = job.title,
                 style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.primary
@@ -314,6 +329,7 @@ fun JobItem(
 
             if (!isExpanded) {
                 Text(
+                    modifier = Modifier.padding(10.dp),
                     text = job.description.take(100) + if (job.description.length > 100) "..." else "",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface
@@ -333,7 +349,6 @@ fun JobItem(
                 }
             }
         }
-    }
 
     if (showDeleteConfirmation) {
         DeleteJobConfirmationDialog(
@@ -380,6 +395,7 @@ fun DeleteJobConfirmationDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
     )
 }
 
+
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun JobDetails(
@@ -389,112 +405,67 @@ fun JobDetails(
     navController: NavController,
     userRole: String
 ) {
-    // Show additional details about the job
-    Spacer(modifier = Modifier.height(8.dp))
-
-    Text(
-        text = "Deadline: ${deadlineDate?.toString() ?: "N/A"}",
-        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-        color = MaterialTheme.colorScheme.onSurface
-    )
-    Spacer(modifier = Modifier.height(4.dp))
-
-    Text(
-        text = job.description,
-        style = MaterialTheme.typography.bodyMedium,
-        modifier = Modifier.padding(vertical = 4.dp),
-        color = MaterialTheme.colorScheme.onSurface
-    )
-    Spacer(modifier = Modifier.height(8.dp))
-
-    // Location
-    Text(
-        text = "Location",
-        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-        color = MaterialTheme.colorScheme.onSurface
-    )
-    Text(
-        text = job.location,
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurface
-    )
-    Spacer(modifier = Modifier.height(4.dp))
-
-    // Salary
-    Text(
-        text = "Salary",
-        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-        color = MaterialTheme.colorScheme.onSurface
-    )
-    Text(
-        text = job.salary,
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurface
-    )
-    Spacer(modifier = Modifier.height(4.dp))
-
-    // Job Type
-    Text(
-        text = "Job Type",
-        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-        color = MaterialTheme.colorScheme.onSurface
-    )
-    Text(
-        text = job.jobType.toString(),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurface
-    )
-    Spacer(modifier = Modifier.height(4.dp))
-
-    // Experience Level
-    Text(
-        text = "Experience Level",
-        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-        color = MaterialTheme.colorScheme.onSurface
-    )
-    Text(
-        text = job.experienceLevel,
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurface
-    )
-    Spacer(modifier = Modifier.height(4.dp))
-
-    // Education Level
-    Text(
-        text = "Education Level",
-        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-        color = MaterialTheme.colorScheme.onSurface
-    )
-    Text(
-        text = job.educationLevel,
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurface
-    )
-    Spacer(modifier = Modifier.height(16.dp))
-
-    // Skills Section
-    if (job.skills.isNotEmpty()) {
-        Text(
-            text = "Skills Required:",
-            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.primary
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            job.skills.forEach { skill ->
-                Text(
-                    text = skill,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.secondary
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)  // Add padding to give the content breathing room
+            .animateContentSize(  // Animate the size changes for smooth expansion and collapse
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioNoBouncy,
+                    stiffness = Spring.StiffnessMedium
                 )
+            )
+    ) {
+        // Deadline Information
+        Text(
+            text = "Deadline: ${deadlineDate?.toString() ?: "N/A"}",
+            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Description
+        Text(
+            text = job.description,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(vertical = 4.dp),
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        JobInfoSection(title = "Location", info = job.location)
+
+        JobInfoSection(title = "Salary", info = job.salary)
+
+        JobInfoSection(title = "Job Type", info = job.jobType.toString())
+
+        JobInfoSection(title = "Experience Level", info = job.experienceLevel)
+
+        JobInfoSection(title = "Education Level", info = job.educationLevel)
+
+        // Skills Required
+        if (job.skills.isNotEmpty()) {
+            Text(
+                text = "Skills Required:",
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Column(modifier = Modifier.fillMaxWidth()) {
+                job.skills.forEach { skill ->
+                    Text(
+                        text = skill,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                }
             }
         }
+
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Apply Button
+        // Apply Button (only for alumni)
         if (userRole == "alumni") {
             Button(
                 modifier = Modifier.fillMaxWidth(),
@@ -511,11 +482,32 @@ fun JobDetails(
                     else
                         MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                 ),
-                enabled = deadlineDate != null && !currentDate.isAfter(deadlineDate) // Disable button if deadline has passed
+                enabled = deadlineDate != null && !currentDate.isAfter(deadlineDate) // Disable button if deadline passed
             ) {
                 Text(text = if (deadlineDate != null && !currentDate.isAfter(deadlineDate)) "Apply" else "Deadline Passed")
             }
-
         }
     }
 }
+
+@Composable
+fun JobInfoSection(title: String, info: String) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = info,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
