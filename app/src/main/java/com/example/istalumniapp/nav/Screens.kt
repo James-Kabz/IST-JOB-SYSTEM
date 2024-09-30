@@ -29,4 +29,5 @@ sealed class Screens(val route:String)
     data object ISTLoginScreen:Screens(route = "login_screen")
     data object ISTRegisterScreen:Screens(route = "register_screen")
     data object DashboardScreen:Screens(route = "dashboard_screen")
+    data object ISTPreviewScreen:Screens(route = "preview_screen")
 }

@@ -16,7 +16,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
-class NotificationViewModel : ViewModel() {
+class NotificationViewModel(private val context: Context) : ViewModel() {
 
     private val firestore = FirebaseFirestore.getInstance()
     private val _notifications = MutableLiveData<List<NotificationData>>()
@@ -53,10 +53,34 @@ class NotificationViewModel : ViewModel() {
                     val unreadCount = notificationList.count { !it.read }
                     _unreadNotificationCount.value = unreadCount
 
+                    // If there are unread notifications, play a sound
+                    if (unreadCount > 0) {
+                        playNotificationSound()
+                    }
+
                 } catch (e: Exception) {
-                    // Handle any errors here
+                    Log.e("NotificationViewModel", "Error fetching notifications: ${e.message}")
                 }
             }
+        }
+    }
+
+    private fun playNotificationSound() {
+        try {
+            // If a MediaPlayer instance already exists, release it before creating a new one
+            mediaPlayer?.release()
+            mediaPlayer = MediaPlayer.create(context, R.raw.pop_up) // Replace with your actual sound resource
+
+            // Set a listener to release the player after the sound finishes
+            mediaPlayer?.setOnCompletionListener { player ->
+                player.release() // Release the MediaPlayer to free resources
+                mediaPlayer = null
+            }
+
+            // Start playing the sound
+            mediaPlayer?.start()
+        } catch (e: Exception) {
+            Log.e("NotificationViewModel", "Error playing sound: ${e.message}")
         }
     }
 
@@ -75,5 +99,4 @@ class NotificationViewModel : ViewModel() {
                 }
         }
     }
-
 }

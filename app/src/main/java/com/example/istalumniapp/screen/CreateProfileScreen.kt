@@ -332,7 +332,7 @@ fun ProcedureOne(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceAround
     ) {
-        val schoolLogo = R.drawable.project_logo
+        val schoolLogo = R.drawable.ist_logo
         Image(
             painter = painterResource(id = schoolLogo),
             contentDescription = "School Logo",
@@ -456,7 +456,7 @@ fun ProcedureTwo(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        val schoolLogo = R.drawable.project_logo
+        val schoolLogo = R.drawable.ist_logo
         Image(
             painter = painterResource(id = schoolLogo),
             contentDescription = "School Logo",
@@ -563,7 +563,7 @@ fun ProcedureThree(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
-        val schoolLogo = R.drawable.project_logo
+        val schoolLogo = R.drawable.ist_logo
         Image(
             painter = painterResource(id = schoolLogo),
             contentDescription = "School Logo",
@@ -669,7 +669,7 @@ fun ProcedureFour(
         verticalArrangement = Arrangement.Top
     ) {
 
-        val schoolLogo = R.drawable.project_logo
+        val schoolLogo = R.drawable.ist_logo
         Image(
             painter = painterResource(id = schoolLogo),
             contentDescription = "School Logo",
