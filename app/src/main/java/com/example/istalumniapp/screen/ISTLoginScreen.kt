@@ -132,132 +132,133 @@ fun ISTLoginScreen(navController: NavController) {
                 }
             }
         } else {
-            Card(
-                modifier = Modifier
-                    .padding(16.dp)
-                    .fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(8.dp)
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Top,
+                modifier = Modifier.fillMaxSize()
+                    .padding(top = 16.dp)
             ) {
-                Column(
+                // Move the Image to the top of the screen and increase its size
+                Image(
+                    modifier = Modifier
+                        .size(150.dp) // Increase the size of the image
+                        .clip(RoundedCornerShape(75.dp)), // Adjust for circular shape if needed
+                    painter = painterResource(R.drawable.ist_logo), // Ensure R.drawable.ist_logo is correct
+                    contentDescription = "App Logo"
+                )
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                Card(
                     modifier = Modifier
                         .padding(16.dp)
                         .fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    elevation = CardDefaults.cardElevation(8.dp)
                 ) {
-                    Text(
-                        text = "Login",
-                        color = MaterialTheme.colorScheme.primary,
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontSize = 24.sp
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Image(
+                    Column(
                         modifier = Modifier
-                            .size(100.dp)
-                            .clip(RoundedCornerShape(56.dp)),
-                        painter = painterResource(R.drawable.project_logo),
-                        contentDescription = "Login"
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    TextField(
-                        value = email,
-                        onValueChange = { email = it },
-                        label = { Text("Email") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    TextField(
-                        value = password,
-                        onValueChange = { password = it },
-                        label = { Text("Password") },
-                        visualTransformation = visualTransformation,
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
+                            .padding(16.dp)
+                            .fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Checkbox(
-                            checked = showPasswordToggle,
-                            onCheckedChange = { isChecked ->
-                                showPasswordToggle = isChecked
-                                passwordVisible = isChecked
-                            }
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(text = "Show Password", color = MaterialTheme.colorScheme.onSurface)
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Text(
-                        text = "Forgot Password?",
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.clickable {
-                            navController.navigate(Screens.ForgotPasswordScreen.route)
-                        }
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Button(
-                        onClick = {
-                            if (email.isNotEmpty() && password.isNotEmpty()) {
-                                isLoading = true
-                                signIn(email, password, auth,
-                                    onSuccess = { user ->
-                                        coroutineScope.launch {
-                                            saveEmail(context, email) // Save email after successful login
-                                        }
-                                        fetchUserRoleAndNavigate(auth, navController, navigateToDashboard, navigateToCreateProfile)
-                                    },
-                                    onFailure = { error ->
-                                        isLoading = false
-                                        errorMessage = error
-                                    })
-                            } else {
-                                Toast.makeText(navController.context, "Please enter both email and password", Toast.LENGTH_LONG).show()
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Log In")
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Text(
-                        text = "Don't have an account?",
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Button(onClick = { navController.navigate(Screens.ISTRegisterScreen.route) }) {
-                        Text(text = "Register")
-                    }
-
-                    errorMessage?.let {
                         Text(
-                            text = it,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodyMedium
+                            text = "Login",
+                            color = MaterialTheme.colorScheme.primary,
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontSize = 24.sp
                         )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        TextField(
+                            value = email,
+                            onValueChange = { email = it },
+                            label = { Text("Email") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        TextField(
+                            value = password,
+                            onValueChange = { password = it },
+                            label = { Text("Password") },
+                            visualTransformation = visualTransformation,
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = showPasswordToggle,
+                                onCheckedChange = { isChecked ->
+                                    showPasswordToggle = isChecked
+                                    passwordVisible = isChecked
+                                }
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(text = "Show Password", color = MaterialTheme.colorScheme.onSurface)
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Text(
+                            text = "Forgot Password?",
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.clickable {
+                                navController.navigate(Screens.ForgotPasswordScreen.route)
+                            }
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Button(
+                            onClick = {
+                                if (email.isNotEmpty() && password.isNotEmpty()) {
+                                    isLoading = true
+                                    signIn(email, password, auth,
+                                        onSuccess = { user ->
+                                            coroutineScope.launch {
+                                                saveEmail(context, email) // Save email after successful login
+                                            }
+                                            fetchUserRoleAndNavigate(auth, navController, navigateToDashboard, navigateToCreateProfile)
+                                        },
+                                        onFailure = { error ->
+                                            isLoading = false
+                                            errorMessage = error
+                                        })
+                                } else {
+                                    Toast.makeText(navController.context, "Please enter both email and password", Toast.LENGTH_LONG).show()
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Log In")
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        errorMessage?.let {
+                            Text(
+                                text = it,
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
                     }
                 }
             }
         }
     }
 }
+
 
 private fun signIn(
     email: String,

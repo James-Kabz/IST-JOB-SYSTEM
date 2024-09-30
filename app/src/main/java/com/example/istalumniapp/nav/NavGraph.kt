@@ -20,6 +20,7 @@ import com.example.istalumniapp.screen.EditJobScreen
 import com.example.istalumniapp.screen.EditProfileScreen
 import com.example.istalumniapp.screen.ForgotPasswordScreen
 import com.example.istalumniapp.screen.ISTLoginScreen
+import com.example.istalumniapp.screen.ISTPreviewScreen
 import com.example.istalumniapp.screen.ISTRegisterScreen
 import com.example.istalumniapp.screen.JobApplicationScreen
 import com.example.istalumniapp.screen.NotificationScreen
@@ -42,7 +43,7 @@ fun NavGraph(
 ) {
     NavHost(
         navController = navController,
-        startDestination = Screens.ISTLoginScreen.route
+        startDestination = Screens.ISTPreviewScreen.route
     ) {
 
 
@@ -222,6 +223,13 @@ fun NavGraph(
         ) {
             ISTLoginScreen(navController = navController)
         }
+
+        composable(
+            route = Screens.ISTPreviewScreen.route
+        ) {
+            ISTPreviewScreen(navController = navController)
+        }
+
 //        dashboard screen
         composable(
             route = Screens.DashboardScreen.route

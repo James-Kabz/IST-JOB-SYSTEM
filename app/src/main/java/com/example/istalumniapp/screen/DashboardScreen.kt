@@ -50,7 +50,6 @@ fun DashboardScreen(
     // Fetch user role when the composable is launched
     LaunchedEffect(Unit) {
         sharedViewModel.fetchUserRole()
-
     }
 
     LaunchedEffect(userRole) {
@@ -62,8 +61,6 @@ fun DashboardScreen(
                     Log.e("DisplayJobScreen", "Error fetching profile photo: $message")
                 }
             )
-
-            notificationViewModel.fetchNotifications()
         }
     }
 

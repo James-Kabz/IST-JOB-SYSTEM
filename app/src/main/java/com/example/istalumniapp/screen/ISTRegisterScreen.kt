@@ -99,7 +99,7 @@ fun ISTRegisterScreen(navController: NavController) {
                         modifier = Modifier
                             .size(100.dp)
                             .clip(RoundedCornerShape(56.dp)),
-                        painter = painterResource(R.drawable.project_logo),
+                        painter = painterResource(R.drawable.ist_logo),
                         contentDescription = "Login"
                     )
 
