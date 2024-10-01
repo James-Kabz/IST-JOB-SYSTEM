@@ -41,8 +41,6 @@ fun DashboardScreen(
     var profilePhotoUrl by remember { mutableStateOf<String?>(null) }
     // Variable to show logout confirmation dialog
     var showLogoutConfirmation by remember { mutableStateOf(false) }
-    val context = LocalContext.current
-    var isLoading by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     var loading by remember { mutableStateOf(true) }
 
@@ -54,6 +52,7 @@ fun DashboardScreen(
 
     LaunchedEffect(userRole) {
         if (userRole == "alumni") {
+            notificationViewModel.playNotificationSound()
             profileViewModel.retrieveProfilePhoto(
                 onLoading = { loading = it },
                 onSuccess = { url -> profilePhotoUrl = url },
@@ -88,11 +87,13 @@ fun DashboardScreen(
         // Once the userRole is available, show the dashboard
         Scaffold(
             topBar = {
+
                 DashboardTopBar(
                     navController = navController,
                     userRole = userRole,  // Pass the user role to DashboardTopBar
                     profilePhotoUrl = profilePhotoUrl,
-                    onLogoutClick = { showLogoutConfirmation = true }
+                    onLogoutClick = { showLogoutConfirmation = true },
+                    notificationViewModel = notificationViewModel
                 )
             },
             bottomBar = {
@@ -117,13 +118,13 @@ fun DashboardScreen(
         }
 
         if (showLogoutConfirmation) {
-            LogoutConfirmationDialog(
+            LogoutConfirm(
                 onConfirm = {
-                    showLogoutConfirmation = false
-                    FirebaseAuth.getInstance().signOut()
-                    navController.navigate("login_screen") {
-                        popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                    FirebaseAuth.getInstance().signOut() // Log out the user
+                    navController.navigate(Screens.ISTPreviewScreen.route) {
+                        popUpTo(0)
                     }
+                    showLogoutConfirmation = false
                 },
                 onDismiss = { showLogoutConfirmation = false }
             )
@@ -183,8 +184,12 @@ fun AdminTopBar(navController: NavController, onLogoutClick: () -> Unit) {
 fun AlumniTopBar(
     navController: NavController,
     onLogoutClick: () -> Unit,
-    profilePhotoUrl: String?
+    profilePhotoUrl: String?,
+    notificationViewModel: NotificationViewModel
 ) {
+    // Assume we have a live data or state holding the number of unread notifications
+    val unreadNotificationsCount by notificationViewModel.unreadNotificationCount.collectAsState(0)
+
     TopAppBar(
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -220,76 +225,6 @@ fun AlumniTopBar(
             }
         },
         actions = {
-            IconButton(
-                onClick = onLogoutClick,
-                colors = IconButtonDefaults.iconButtonColors(
-                    contentColor = MaterialTheme.colorScheme.primary
-                )
-            ) {
-                Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Logout")
-            }
-        }
-    )
-}
-
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun DashboardTopBar(navController: NavController, userRole: String?, onLogoutClick: () -> Unit,profilePhotoUrl: String?) {
-    when (userRole) {
-        "alumni" -> AlumniTopBar(navController = navController, onLogoutClick = onLogoutClick,profilePhotoUrl)
-        "admin" -> AdminTopBar(navController = navController, onLogoutClick = onLogoutClick)
-//        else -> DefaultTopBar(navController = navController, onLogoutClick = onLogoutClick) // If needed, provide a default top bar
-    }
-}
-
-
-    @Composable
-    fun LogoutConfirmationDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
-        AlertDialog(
-            onDismissRequest = onDismiss,
-            confirmButton = {
-                Button(
-                    onClick = onConfirm,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor = MaterialTheme.colorScheme.onError
-                    )
-                ) {
-                    Text("Logout")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = onDismiss) {
-                    Text("Cancel")
-                }
-            },
-            title = { Text("Logout") },
-            text = { Text("Are you sure you want to logout?") }
-        )
-    }
-
-
-@Composable
-fun AlumniDashboard(navController: NavController, notificationViewModel: NotificationViewModel) {
-    // Assume we have a live data or state holding the number of unread notifications
-    val unreadNotificationsCount by notificationViewModel.unreadNotificationCount.collectAsState(0)
-
-    BottomAppBar(
-        containerColor = MaterialTheme.colorScheme.onPrimary
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceAround,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = { navController.navigate(Screens.DashboardScreen.route) }) {
-                Icon(
-                    Icons.Filled.Home,
-                    contentDescription = "Home",
-                    modifier = Modifier.size(40.dp)
-                )
-            }
             Box {
                 IconButton(onClick = {
                     navController.navigate(Screens.NotificationsScreen.route)  // Navigate to the notifications screen
@@ -309,6 +244,50 @@ fun AlumniDashboard(navController: NavController, notificationViewModel: Notific
                 }
             }
 
+            IconButton(
+                onClick = onLogoutClick,
+                colors = IconButtonDefaults.iconButtonColors(
+                    contentColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Logout")
+            }
+        }
+    )
+}
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DashboardTopBar(navController: NavController,notificationViewModel: NotificationViewModel, userRole: String?, onLogoutClick: () -> Unit,profilePhotoUrl: String?) {
+    when (userRole) {
+        "alumni" -> AlumniTopBar(navController = navController, onLogoutClick = onLogoutClick,profilePhotoUrl, notificationViewModel = notificationViewModel)
+        "admin" -> AdminTopBar(navController = navController, onLogoutClick = onLogoutClick)
+//        else -> DefaultTopBar(navController = navController, onLogoutClick = onLogoutClick) // If needed, provide a default top bar
+    }
+}
+
+
+@Composable
+fun AlumniDashboard(navController: NavController, notificationViewModel: NotificationViewModel) {
+
+
+    BottomAppBar(
+        containerColor = MaterialTheme.colorScheme.onPrimary
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = { navController.navigate(Screens.DashboardScreen.route) }) {
+                Icon(
+                    Icons.Filled.Home,
+                    contentDescription = "Home",
+                    modifier = Modifier.size(40.dp)
+                )
+            }
+
 
 
             IconButton(onClick = {
@@ -321,14 +300,6 @@ fun AlumniDashboard(navController: NavController, notificationViewModel: Notific
                 Icon(
                     Icons.Filled.Star,
                     contentDescription = "View Applications",
-                    modifier = Modifier.size(40.dp)
-                )
-            }
-
-            IconButton(onClick = { navController.navigate(Screens.ViewAlumniProfilesScreen.route) }) {
-                Icon(
-                    Icons.Filled.AccountCircle,
-                    contentDescription = "Manage Users",
                     modifier = Modifier.size(40.dp)
                 )
             }

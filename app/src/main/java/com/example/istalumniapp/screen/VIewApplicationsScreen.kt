@@ -80,7 +80,9 @@ fun ViewApplicationScreen(
                 navController = navController,
                 onLogoutClick = { showLogoutConfirmation = true },
                 userRole = userRole,
-                profilePhotoUrl = profilePhotoUrl
+                profilePhotoUrl = profilePhotoUrl,
+                notificationViewModel = notificationViewModel
+
             )
         },
         bottomBar = {

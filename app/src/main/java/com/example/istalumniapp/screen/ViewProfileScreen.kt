@@ -83,7 +83,7 @@ fun ViewProfileScreen(navController: NavController, profileViewModel: ProfileVie
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(20.dp)
+            .padding(20.dp, top = 30.dp)
     ) {
         // Add back button
         IconButton(onClick = { navController.popBackStack() }) {
