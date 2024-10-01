@@ -98,7 +98,9 @@ fun DisplayJobScreen(
         LogoutConfirm(
             onConfirm = {
                 FirebaseAuth.getInstance().signOut() // Log out the user
-                navController.navigate(Screens.ISTLoginScreen.route) // Navigate to login screen
+                navController.navigate(Screens.ISTPreviewScreen.route) {
+                    popUpTo(0)
+                }
                 showLogoutConfirmation = false
             },
             onDismiss = { showLogoutConfirmation = false }
@@ -111,7 +113,8 @@ fun DisplayJobScreen(
                 navController = navController,
                 onLogoutClick = { showLogoutConfirmation = true },
                 userRole = userRole,
-                profilePhotoUrl = profilePhotoUrl
+                profilePhotoUrl = profilePhotoUrl,
+                notificationViewModel = notificationViewModel
             )
         },
         bottomBar = {
@@ -294,7 +297,7 @@ fun JobItem(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Button(onClick = { navController.navigate("edit_job/${job.jobID}") }) {
-                        Icon(imageVector = Icons.Default.Edit, contentDescription = "Delete Job")
+                        Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit Job")
                     }
                     IconButton(onClick = { showDeleteConfirmation = true }) {
                         Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete Job")

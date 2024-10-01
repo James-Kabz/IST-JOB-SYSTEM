@@ -59,7 +59,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.onPrimary
                 ) {
-                    notificationViewModel.fetchNotifications()
+//                    notificationViewModel.fetchNotifications()
                     // Initialize the NavController
                     navController = rememberNavController()
                     // Calling the NavGraph that contains the composable with screens

@@ -26,6 +26,7 @@ import com.example.istalumniapp.R
 import kotlinx.coroutines.CoroutineScope
 import okhttp3.internal.notify
 import android.app.NotificationManager
+import androidx.compose.ui.platform.LocalContext
 
 
 @Suppress("UNCHECKED_CAST")
@@ -191,6 +192,7 @@ class ProfileViewModel :ViewModel()  {
             }
             return@launch
         }
+
 
         // Use the current user's uid as the profileID
         val profileID = uid

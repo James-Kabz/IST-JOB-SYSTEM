@@ -53,10 +53,10 @@ class NotificationViewModel(private val context: Context) : ViewModel() {
                     val unreadCount = notificationList.count { !it.read }
                     _unreadNotificationCount.value = unreadCount
 
-                    // If there are unread notifications, play a sound
-                    if (unreadCount > 0) {
-                        playNotificationSound()
-                    }
+//                    // If there are unread notifications, play a sound
+//                    if (unreadCount > 0) {
+//                        playNotificationSound()
+//                    }
 
                 } catch (e: Exception) {
                     Log.e("NotificationViewModel", "Error fetching notifications: ${e.message}")
@@ -65,24 +65,51 @@ class NotificationViewModel(private val context: Context) : ViewModel() {
         }
     }
 
-    private fun playNotificationSound() {
-        try {
-            // If a MediaPlayer instance already exists, release it before creating a new one
-            mediaPlayer?.release()
-            mediaPlayer = MediaPlayer.create(context, R.raw.pop_up) // Replace with your actual sound resource
+    fun playNotificationSound() {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid
+        if (uid != null) {
+            // Fetch notifications from Firestore for the current user using task listeners
+            firestore.collection("notifications")
+                .whereEqualTo("profileID", uid)
+                .get()
+                .addOnSuccessListener { result ->
+                    // Parse the result into a list of NotificationData
+                    val notificationList =
+                        result.mapNotNull { it.toObject(NotificationData::class.java) }
 
-            // Set a listener to release the player after the sound finishes
-            mediaPlayer?.setOnCompletionListener { player ->
-                player.release() // Release the MediaPlayer to free resources
-                mediaPlayer = null
-            }
+                    // Update the LiveData with the list of notifications
+                    _notifications.postValue(notificationList)
 
-            // Start playing the sound
-            mediaPlayer?.start()
-        } catch (e: Exception) {
-            Log.e("NotificationViewModel", "Error playing sound: ${e.message}")
+                    // Update the unread notification count
+                    val unreadCount = notificationList.count { !it.read }
+                    _unreadNotificationCount.value = unreadCount
+
+                    if (unreadCount > 0) {
+                        // Play the notification sound
+                        try {
+                            // If a MediaPlayer instance already exists, release it before creating a new one
+                            mediaPlayer?.release()
+                            mediaPlayer = MediaPlayer.create(context, R.raw.music2) // Replace with your actual sound resource
+
+                            // Set a listener to release the player after the sound finishes
+                            mediaPlayer?.setOnCompletionListener { player ->
+                                player.release() // Release the MediaPlayer to free resources
+                                mediaPlayer = null
+                            }
+
+                            // Start playing the sound
+                            mediaPlayer?.start()
+                        } catch (e: Exception) {
+                            Log.e("NotificationViewModel", "Error playing sound: ${e.message}")
+                        }
+                    }
+                }
+                .addOnFailureListener { e ->
+                    Log.e("NotificationViewModel", "Error fetching notifications: ${e.message}")
+                }
         }
     }
+
 
 
     fun markNotificationAsRead(id: String) {

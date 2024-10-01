@@ -76,7 +76,9 @@ fun ViewAlumniProfilesScreen(
         LogoutConfirm(
             onConfirm = {
                 FirebaseAuth.getInstance().signOut() // Log out the user
-                navController.navigate(Screens.ISTLoginScreen.route) // Navigate to login screen
+                navController.navigate(Screens.ISTPreviewScreen.route) {
+                    popUpTo(0)
+                }
                 showLogoutConfirmation = false
             },
             onDismiss = { showLogoutConfirmation = false }
@@ -90,7 +92,9 @@ fun ViewAlumniProfilesScreen(
                 navController = navController,
                 onLogoutClick = { showLogoutConfirmation = true },
                 userRole = userRole,
-                profilePhotoUrl = profilePhotoUrl
+                profilePhotoUrl = profilePhotoUrl,
+                notificationViewModel = notificationViewModel
+
             )
         },
         bottomBar = {
