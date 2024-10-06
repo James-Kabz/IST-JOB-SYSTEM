@@ -1,17 +1,19 @@
 package com.example.istalumniapp.utils
 
-import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Build
 import android.util.Log
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.istalumniapp.R
-import com.example.istalumniapp.screen.auth
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
@@ -36,8 +38,23 @@ class SharedViewModel : ViewModel() {
     private val _loading = MutableStateFlow<Boolean>(false)
     val loading: StateFlow<Boolean> = _loading
 
+    private val _alumniProfiles = MutableStateFlow<List<AlumniProfileData>>(emptyList())
+    val alumniProfiles: StateFlow<List<AlumniProfileData>> = _alumniProfiles
 
-//    fetch user role
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage
+
+    private val _notifications = MutableLiveData<List<NotificationData>>()
+    val notifications: LiveData<List<NotificationData>> = _notifications
+
+    private val _notificationSize = MutableLiveData<Int>()
+    val notificationSize: LiveData<Int> get() = _notificationSize
+
+    // StateFlow to hold the unread notifications count
+    private val _unreadNotificationCount = MutableStateFlow(0)
+    val unreadNotificationCount: StateFlow<Int> get() = _unreadNotificationCount
+
+    //    fetch user role
     init {
         fetchUserRole()
     }
@@ -55,7 +72,6 @@ class SharedViewModel : ViewModel() {
     }
 
 
-
     fun saveJob(
         jobData: JobData,
         context: Context,
@@ -69,7 +85,8 @@ class SharedViewModel : ViewModel() {
                     // Notify the user that the job was successfully posted
                     CoroutineScope(Dispatchers.Main).launch {
                         notifyAlumniWithMatchingSkills(jobData, context)
-                        Toast.makeText(context, "Job Posted Successfully", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Job Posted Successfully", Toast.LENGTH_SHORT)
+                            .show()
                         onJobSaved()
                     }
 
@@ -103,7 +120,8 @@ class SharedViewModel : ViewModel() {
             }
         } catch (e: Exception) {
             withContext(Dispatchers.Main) {
-                Toast.makeText(context, "Error notifying alumni: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Error notifying alumni: ${e.message}", Toast.LENGTH_SHORT)
+                    .show()
             }
         }
     }
@@ -113,7 +131,7 @@ class SharedViewModel : ViewModel() {
         // Save the notification in Firestore
         val notificationData = NotificationData(
             id = UUID.randomUUID().toString(),
-            profileID =   profileID,
+            profileID = profileID,
             title = "New Job Matches Your Skills!",
             message = "A job titled \"${jobData.title}\" matches your skills.",
             timestamp = System.currentTimeMillis(),
@@ -125,7 +143,8 @@ class SharedViewModel : ViewModel() {
             .set(notificationData)
             .addOnSuccessListener {
                 // Create a NotificationManager
-                val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                val notificationManager =
+                    context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
                 Log.d("Firestore", "Notification saved successfully")
                 // Create the notification channel (for Android 8+)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -150,12 +169,13 @@ class SharedViewModel : ViewModel() {
             }
             .addOnFailureListener { e ->
                 Log.e("FirestoreError", "Failed to save notification: ${e.message}")
-                Toast.makeText(context, "Failed to send notification: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    context,
+                    "Failed to send notification: ${e.message}",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
     }
-
-
-
 
 
     // Your editJob method remains unchanged
@@ -231,7 +251,8 @@ class SharedViewModel : ViewModel() {
             firestoreRef.set(skill)
                 .addOnSuccessListener {
                     CoroutineScope(Dispatchers.Main).launch {
-                        Toast.makeText(context, "Skill Saved Successfully", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Skill Saved Successfully", Toast.LENGTH_SHORT)
+                            .show()
                     }
                 }
                 .addOnFailureListener { e ->
@@ -248,6 +269,31 @@ class SharedViewModel : ViewModel() {
 
 
     // Function to retrieve job data
+    fun retrieveCardJobs(
+        onLoading: (Boolean) -> Unit,  // Callback to handle loading state
+        onSuccess: (Int) -> Unit,      // Callback to pass the count of jobs
+        onFailure: (String) -> Unit    // Callback to handle errors
+    ) {
+        CoroutineScope(Dispatchers.IO).launch {
+            val firestoreRef = firestore.collection("jobs")
+            onLoading(true)
+            try {
+                firestoreRef.get().addOnSuccessListener { result ->
+                    val jobs = result.mapNotNull { it.toObject(JobData::class.java) }
+                    val jobCount = jobs.size
+                    onLoading(false)
+                    onSuccess(jobCount)  // Pass the count of jobs
+                }.addOnFailureListener {
+                    onLoading(false)
+                    onFailure("Error fetching jobs: ${it.message}")
+                }
+            } catch (e: Exception) {
+                onLoading(false)
+                onFailure("Error: ${e.message}")
+            }
+        }
+    }
+
     fun retrieveJobs(
         onLoading: (Boolean) -> Unit,
         onSuccess: (List<JobData>) -> Unit,
@@ -295,6 +341,101 @@ class SharedViewModel : ViewModel() {
                 onFailure("Error: ${e.message}")
             }
         }
+    }
+
+
+    fun retrieveAlumniProfiles(
+        onLoading: (Boolean) -> Unit,  // Callback to handle loading state
+        onSuccess: (Int) -> Unit,      // Callback to pass the count of profiles
+        onFailure: (String) -> Unit    // Callback to handle errors
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            onLoading(true)
+            try {
+                val firestoreRef = firestore.collection("alumniProfiles")
+                val result = firestoreRef.get().await()
+                val profiles = result.mapNotNull { it.toObject(AlumniProfileData::class.java) }
+                val profileCount = profiles.size
+                withContext(Dispatchers.Main) {
+                    onLoading(false)
+                    onSuccess(profileCount)  // Pass the count of profiles
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    onLoading(false)
+                    onFailure("Error fetching profiles: ${e.message}")
+                }
+            }
+        }
+    }
+
+
+    fun fetchAllApplicationsForAdminReview(onResult: (List<JobApplicationData>) -> Unit) {
+        firestore.collection("job_applications")
+            .get()
+            .addOnSuccessListener { querySnapshot ->
+                val applications = querySnapshot.toObjects(JobApplicationData::class.java)
+
+                // List to store updated applications with user details and job information
+                val updatedApplications = mutableListOf<JobApplicationData>()
+
+                // Fetch user details and job details for each application
+                applications.forEach { application ->
+                    // Fetch user details using userId
+                    firestore.collection("users").document(application.userId).get()
+                        .addOnSuccessListener { userSnapshot ->
+                            val userEmail = userSnapshot.getString("email") ?: "Unknown"
+                            application.email = userEmail  // Add user email to application data
+
+                            // Now fetch job details using jobID
+                            firestore.collection("jobs").document(application.jobID).get()
+                                .addOnSuccessListener { jobSnapshot ->
+                                    if (jobSnapshot.exists()) {
+                                        val jobTitle = jobSnapshot.getString("title") ?: ""
+                                        val companyLogo = jobSnapshot.getString("companyLogo") ?: ""
+
+                                        // Update the application with job details
+                                        application.title = jobTitle
+                                        application.companyLogo = companyLogo
+                                    }
+
+                                    // Add the updated application to the list
+                                    updatedApplications.add(application)
+
+                                    // Once all applications are updated, return the result
+                                    if (updatedApplications.size == applications.size) {
+                                        onResult(updatedApplications)  // Return the updated list
+                                    }
+                                }
+                                .addOnFailureListener { exception ->
+                                    Log.e("FirestoreError", "Error fetching job details", exception)
+
+                                    // Add the application even if job details fail
+                                    updatedApplications.add(application)
+
+                                    // Once all applications are updated, return the result
+                                    if (updatedApplications.size == applications.size) {
+                                        onResult(updatedApplications)  // Return the updated list
+                                    }
+                                }
+                        }
+                        .addOnFailureListener { exception ->
+                            Log.e("FirestoreError", "Error fetching user details", exception)
+
+                            // Add the application even if user details fail
+                            updatedApplications.add(application)
+
+                            // Once all applications are updated, return the result
+                            if (updatedApplications.size == applications.size) {
+                                onResult(updatedApplications)  // Return the updated list
+                            }
+                        }
+                }
+            }
+            .addOnFailureListener { exception ->
+                Log.e("FirestoreError", "Error fetching applications for admin", exception)
+                onResult(emptyList())  // Return an empty list in case of failure
+            }
     }
 
 

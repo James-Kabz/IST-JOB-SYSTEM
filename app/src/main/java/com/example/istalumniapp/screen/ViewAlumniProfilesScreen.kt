@@ -59,11 +59,6 @@ fun ViewAlumniProfilesScreen(
             userRole = documentSnapshot.getString("role") ?: "alumni"
         }
 
-        profileViewModel.retrieveProfilePhoto(
-            onLoading = { loadingProfile.value = it },
-            onSuccess = { url -> profilePhotoUrl = url },
-            onFailure = { message -> Log.e("ViewAlumniProfilesScreen", "Error fetching profile photo: $message") }
-        )
     }
 
     // Fetch alumni profiles

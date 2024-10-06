@@ -56,13 +56,11 @@ fun NotificationScreen(
             userRole = documentSnapshot.getString("role") ?: "alumni"
         }
 
-        if (userRole == "alumni") {
             profileViewModel.retrieveProfilePhoto(
                 onLoading = { /* handle loading if needed */ },
                 onSuccess = { url -> profilePhotoUrl = url },
                 onFailure = { message -> Log.e("NotificationScreen", "Error fetching profile photo: $message") }
             )
-        }
 
         isLoading = false // Set loading to false after fetching
     }

@@ -24,7 +24,6 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-
 @SuppressLint("UnrememberedMutableState")
 @Composable
 fun ViewApplicationScreen(
@@ -43,7 +42,7 @@ fun ViewApplicationScreen(
     val coroutineScope = rememberCoroutineScope()
 
     var userRole by remember { mutableStateOf<String?>(null) }
-    var loading by remember { mutableStateOf(true) }
+    var loading by remember { mutableStateOf(true) }  // Initially set to true
     var profilePhotoUrl by remember { mutableStateOf<String?>(null) }
     var showLogoutConfirmation by remember { mutableStateOf(false) }
 
@@ -59,7 +58,7 @@ fun ViewApplicationScreen(
         // Fetch all applications for admin review
         applicationModel.fetchAllApplicationsForAdminReview { applications ->
             applicationState.value = applications
-            loading = false
+            loading = false  // Set loading to false after fetching applications
         }
     }
 
@@ -82,7 +81,6 @@ fun ViewApplicationScreen(
                 userRole = userRole,
                 profilePhotoUrl = profilePhotoUrl,
                 notificationViewModel = notificationViewModel
-
             )
         },
         bottomBar = {
@@ -102,21 +100,16 @@ fun ViewApplicationScreen(
                 CircularProgressIndicator()
             }
         } else {
-            val applications = applicationState.value?.let { list ->
-                val fromIndex = currentPage * itemsPerPage
-                val toIndex = (fromIndex + itemsPerPage).coerceAtMost(list.size)
-                list.subList(fromIndex, toIndex)
-            } ?: emptyList()
-
-            if (applications.isEmpty()) {
-                // Show message if no applications are found
+            // If no applications are available, display a message
+            val applications = applicationState.value
+            if (applications.isNullOrEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("No applications available for review.")
+                    Text("No applications available for review.", style = MaterialTheme.typography.bodyLarge)
                 }
             } else {
                 LazyColumn(
@@ -126,7 +119,7 @@ fun ViewApplicationScreen(
                         .padding(paddingValues)
                         .padding(16.dp)
                 ) {
-                    itemsIndexed(applications) { index, application ->
+                    itemsIndexed(applications) { _, application ->
                         var showFeedbackDialog by remember { mutableStateOf(false) }
                         var feedbackText by remember { mutableStateOf("") }
                         var showProgress by remember { mutableStateOf(false) }
@@ -299,6 +292,8 @@ fun ViewApplicationScreen(
         }
     }
 }
+
+
 
 @Composable
 fun FeedbackDialog(

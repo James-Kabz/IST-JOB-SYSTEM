@@ -70,7 +70,6 @@ fun DisplayJobScreen(
             userRole = documentSnapshot.getString("role") ?: "alumni"
         }
 
-        if (userRole == "alumni"){
         profileViewModel.retrieveProfilePhoto(
             onLoading = { loading.value = it },
             onSuccess = { url -> profilePhotoUrl = url },
@@ -80,8 +79,7 @@ fun DisplayJobScreen(
                     "Error fetching profile photo: $message"
                 )
 
-        }
-        )}
+        })
     }
 
     // Fetch jobs
