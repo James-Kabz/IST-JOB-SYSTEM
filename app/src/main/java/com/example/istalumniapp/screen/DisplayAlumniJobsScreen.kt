@@ -65,14 +65,14 @@ fun DisplayAlumniJobsScreen(
         }
     }
 
-    // Fetch profile photo
-    LaunchedEffect(Unit) {
-        profileViewModel.retrieveProfilePhoto(
-            onLoading = { isLoading = it },
-            onSuccess = { url -> profilePhotoUrl = url },
-            onFailure = { message -> Log.e("AlumniJobsScreen", "Error fetching profile photo: $message") }
-        )
-    }
+//    // Fetch profile photo
+//    LaunchedEffect(Unit) {
+//        profileViewModel.retrieveProfilePhoto(
+//            onLoading = { isLoading = it },
+//            onSuccess = { url -> profilePhotoUrl = url },
+//            onFailure = { message -> Log.e("AlumniJobsScreen", "Error fetching profile photo: $message") }
+//        )
+//    }
 
     LaunchedEffect(Unit) {
         val uid = FirebaseAuth.getInstance().currentUser?.uid
@@ -82,7 +82,6 @@ fun DisplayAlumniJobsScreen(
             userRole = documentSnapshot.getString("role") ?: "alumni"
         }
 
-        if (userRole == "alumni"){
             profileViewModel.retrieveProfilePhoto(
                 onLoading = { loading.value = it },
                 onSuccess = { url -> profilePhotoUrl = url },
@@ -93,7 +92,7 @@ fun DisplayAlumniJobsScreen(
                     )
 
                 }
-            )}
+            )
     }
 
     // Show logout confirmation dialog

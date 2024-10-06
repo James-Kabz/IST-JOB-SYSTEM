@@ -52,6 +52,7 @@ android {
 
 dependencies {
 
+    implementation (libs.material)
     implementation (libs.material3)
     // In build.gradle (app)
     implementation (platform(libs.firebase.bom.v3120))
