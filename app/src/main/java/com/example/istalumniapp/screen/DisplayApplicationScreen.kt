@@ -28,6 +28,9 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import android.util.Log
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import coil.request.ImageRequest
 import com.example.istalumniapp.nav.Screens
 import com.example.istalumniapp.utils.JobApplicationData
 import com.example.istalumniapp.utils.NotificationViewModel
@@ -47,7 +50,8 @@ fun DisplayApplicationScreen(
     notificationViewModel: NotificationViewModel,
     userId: String
 ) {
-    val applicationState = jobApplicationModel.applicationState.collectAsState(initial = emptyList())
+    val applicationState =
+        jobApplicationModel.applicationState.collectAsState(initial = emptyList())
     var showDeleteConfirmation by remember { mutableStateOf(false) }
     var applicationToDelete by remember { mutableStateOf<JobApplicationData?>(null) }
     var isSubmitting by remember { mutableStateOf(false) }
@@ -112,7 +116,11 @@ fun DisplayApplicationScreen(
             )
         },
         bottomBar = {
-            DashboardBottomBar(navController = navController, userRole = userRole, notificationViewModel = notificationViewModel)
+            DashboardBottomBar(
+                navController = navController,
+                userRole = userRole,
+                notificationViewModel = notificationViewModel
+            )
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { paddingValues ->
@@ -191,8 +199,11 @@ fun DisplayApplicationScreen(
                         items(applicationState.value!!) { application ->
                             // Fetch feedback for the application
                             var feedback by remember { mutableStateOf<String?>(null) }
-                            LaunchedEffect(application.applicationId,application.userId) {
-                                jobApplicationModel.retrieveFeedback(application.applicationId,application.userId) { retrievedFeedback ->
+                            LaunchedEffect(application.applicationId, application.userId) {
+                                jobApplicationModel.retrieveFeedback(
+                                    application.applicationId,
+                                    application.userId
+                                ) { retrievedFeedback ->
                                     feedback = retrievedFeedback
                                 }
                             }
@@ -204,12 +215,37 @@ fun DisplayApplicationScreen(
                                 Column(
                                     modifier = Modifier.padding(16.dp)
                                 ) {
-                                    Image(
-                                        painter = rememberAsyncImagePainter(application.companyLogo),
-                                        contentDescription = "Company Logo",
-                                        modifier = Modifier.size(60.dp),
-                                        contentScale = ContentScale.Crop
-                                    )
+                                    val defaultPhoto =
+                                        painterResource(id = R.drawable.dashboard_default) // Use the default "ist_logo.png"
+
+                                    if (application.companyLogo.isNotEmpty()) {
+                                        // If the company logo is available, load it
+                                        val painter = rememberAsyncImagePainter(
+                                            ImageRequest.Builder(LocalContext.current)
+                                                .data(application.companyLogo)
+                                                .apply { crossfade(true) }.build()
+                                        )
+                                        Image(
+                                            painter = painter,
+                                            contentDescription = "Company Logo",
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier
+                                                .size(100.dp)
+                                                .align(Alignment.CenterHorizontally)
+                                                .clip(RoundedCornerShape(8.dp))
+                                        )
+                                    } else {
+                                        // Display the default job logo (ist_logo.png) when companyLogo is null or empty
+                                        Image(
+                                            painter = defaultPhoto,
+                                            contentDescription = "Default Job Logo",
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier
+                                                .size(100.dp)
+                                                .align(Alignment.CenterHorizontally)
+                                                .clip(RoundedCornerShape(8.dp))
+                                        )
+                                    }
 
                                     Text(
                                         text = " ${application.title}",

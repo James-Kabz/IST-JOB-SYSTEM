@@ -2,13 +2,17 @@ package com.example.istalumniapp.screen
 
 
 import android.app.DatePickerDialog
+import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -47,7 +51,14 @@ import java.util.UUID
 
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.input.ImeAction
+import com.example.istalumniapp.R
+import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
 fun AddJobScreen(navController: NavController, sharedViewModel: SharedViewModel) {
@@ -200,7 +211,7 @@ fun AddJobScreen(navController: NavController, sharedViewModel: SharedViewModel)
                     onCompanyLogoChange = { companyLogo = it },
                     onPrevious = { currentStep = 2 },
                     onNext = {
-                        if (companyName.isBlank() || companyLogo.isBlank()) {
+                        if (companyName.isBlank()) {
                             errorMessage = "Please fill in all fields to proceed."
                         } else {
                             errorMessage = ""
@@ -223,42 +234,50 @@ fun AddJobScreen(navController: NavController, sharedViewModel: SharedViewModel)
                         }
                     }
                 )
-                5 -> StepFive(
-                    selectedSkills = selectedSkills,
-                    onSkillSelected = { selectedSkills = selectedSkills + it },
-                    onSkillDeselected = { selectedSkills = selectedSkills - it },
-                    skills = skills,
-                    expanded = skillsExpanded,
-                    deadlineDateFormatted = deadlineDateFormatted,
-                    onDeadlineDateClick = { datePickerDialog.show() },
-                    onExpandedChange = { skillsExpanded = it },
-                    onPrevious = { currentStep = 4 },
-                    onSubmit = {
-                        if (selectedSkills.isEmpty()) {
-                            errorMessage = "Please select at least one skill."
-                        } else {
-                            errorMessage = ""
-                            isSubmitting = true
-                            val jobData = JobData(
-                                jobID = UUID.randomUUID().toString(),
-                                title = title,
-                                description = description,
-                                location = location,
-                                salary = salary,
-                                companyName = companyName,
-                                jobType = jobType,
-                                experienceLevel = experienceLevel,
-                                educationLevel = educationLevel,
-                                companyLogo = companyLogo,
-                                skills = selectedSkills,
-                                deadlineDate = deadlineDate
-                            )
-                            sharedViewModel.saveJob(jobData = jobData, context = context, onJobSaved = { Unit })
-                            isSubmitting = false
-                            navController.popBackStack() // Go back after submitting
+                5 -> {
+                    StepFive(
+                        selectedSkills = selectedSkills,
+                        onSkillSelected = { selectedSkills = selectedSkills + it },
+                        onSkillDeselected = { selectedSkills = selectedSkills - it },
+                        skills = skills,
+                        expanded = skillsExpanded,
+                        deadlineDateFormatted = deadlineDateFormatted,
+                        onDeadlineDateClick = { datePickerDialog.show() },
+                        onExpandedChange = { skillsExpanded = it },
+                        onPrevious = { currentStep = 4 },
+                        sharedViewModel =  sharedViewModel,
+                        onSubmit = {
+                            if (selectedSkills.isEmpty()) {
+                                errorMessage = "Please select at least one skill."
+                            } else {
+                                errorMessage = ""
+                                isSubmitting = true
+                                val jobData = JobData(
+                                    jobID = UUID.randomUUID().toString(),
+                                    title = title,
+                                    description = description,
+                                    location = location,
+                                    salary = salary,
+                                    companyName = companyName,
+                                    jobType = jobType,
+                                    experienceLevel = experienceLevel,
+                                    educationLevel = educationLevel,
+                                    companyLogo = companyLogo,
+                                    skills = selectedSkills,
+                                    deadlineDate = deadlineDate
+                                )
+                                sharedViewModel.saveJob(
+                                    jobData = jobData,
+                                    context = context,
+                                    onJobSaved = { Unit })
+                                isSubmitting = false
+                                navController.popBackStack() // Go back after submitting
+                            }
                         }
-                    }
-                )
+                    )
+
+
+                }
             }
         }
     }
@@ -282,14 +301,27 @@ fun StepOne(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
-        Text(text = "Step 1", fontSize = 24.sp)
+        val schoolLogo = R.drawable.ist_logo
+
+        Image(
+            painter = painterResource(id = schoolLogo),
+            contentDescription = "School Logo",
+            modifier = Modifier
+                .size(200.dp)
+                .shadow(4.dp),
+            contentScale = ContentScale.Crop
+        )
         // Title
         OutlinedTextField(
             modifier = Modifier.fillMaxWidth(),
             value = title,
             onValueChange = onTitleChange,
             label = { Text(text = "Title") },
-            isError = title.isBlank()
+            isError = title.isBlank(),
+            keyboardOptions = KeyboardOptions.Default.copy(
+                keyboardType = KeyboardType.Text,
+                imeAction = ImeAction.Next
+            ),
         )
         // Description
         OutlinedTextField(
@@ -297,7 +329,11 @@ fun StepOne(
             value = description,
             onValueChange = onDescriptionChange,
             label = { Text(text = "Description") },
-            isError = description.isBlank()
+            isError = description.isBlank(),
+            keyboardOptions = KeyboardOptions.Default.copy(
+                keyboardType = KeyboardType.Text,
+                imeAction = ImeAction.Done
+            ),
         )
         // Next Button
         Button(
@@ -324,14 +360,27 @@ fun StepTwo(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
-        Text(text = "Step 2", fontSize = 24.sp)
+        val schoolLogo = R.drawable.ist_logo
+
+        Image(
+            painter = painterResource(id = schoolLogo),
+            contentDescription = "School Logo",
+            modifier = Modifier
+                .size(200.dp)
+                .shadow(4.dp),
+            contentScale = ContentScale.Crop
+        )
         // Location
         OutlinedTextField(
             modifier = Modifier.fillMaxWidth(),
             value = location,
             onValueChange = onLocationChange,
             label = { Text(text = "Location") },
-            isError = location.isBlank()
+            isError = location.isBlank(),
+            keyboardOptions = KeyboardOptions.Default.copy(
+                keyboardType = KeyboardType.Text,
+                imeAction = ImeAction.Next
+            ),
         )
         // Salary
         OutlinedTextField(
@@ -339,8 +388,11 @@ fun StepTwo(
             value = salary,
             onValueChange = onSalaryChange,
             label = { Text(text = "Salary") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            isError = salary.isBlank()
+            isError = salary.isBlank(),
+            keyboardOptions = KeyboardOptions.Default.copy(
+                keyboardType = KeyboardType.Text,
+                imeAction = ImeAction.Done
+            ),
         )
         // Navigation Buttons
         Row(
@@ -378,14 +430,26 @@ fun StepThree(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
-        Text(text = "Step 3", fontSize = 24.sp)
+        val schoolLogo = R.drawable.ist_logo
+        Image(
+            painter = painterResource(id = schoolLogo),
+            contentDescription = "School Logo",
+            modifier = Modifier
+                .size(200.dp)
+                .shadow(4.dp),
+            contentScale = ContentScale.Crop
+        )
         // Company Name
         OutlinedTextField(
             modifier = Modifier.fillMaxWidth(),
             value = companyName,
             onValueChange = onCompanyNameChange,
             label = { Text(text = "Company Name") },
-            isError = companyName.isBlank()
+            isError = companyName.isBlank(),
+            keyboardOptions = KeyboardOptions.Default.copy(
+                keyboardType = KeyboardType.Text,
+                imeAction = ImeAction.Next
+            ),
         )
         // Job Type Dropdown
         Column(modifier = Modifier
@@ -419,7 +483,11 @@ fun StepThree(
             value = companyLogo,
             onValueChange = onCompanyLogoChange,
             label = { Text(text = "Company Logo URL") },
-            isError = companyLogo.isBlank()
+            isError = companyLogo.isBlank(),
+            keyboardOptions = KeyboardOptions.Default.copy(
+                keyboardType = KeyboardType.Text,
+                imeAction = ImeAction.Done
+            ),
         )
         // Navigation Buttons
         Row(
@@ -453,14 +521,26 @@ fun StepFour(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
-        Text(text = "Step 4", fontSize = 24.sp)
+        val schoolLogo = R.drawable.ist_logo
+        Image(
+            painter = painterResource(id = schoolLogo),
+            contentDescription = "School Logo",
+            modifier = Modifier
+                .size(200.dp)
+                .shadow(4.dp),
+            contentScale = ContentScale.Crop
+        )
         // Experience Level
         OutlinedTextField(
             modifier = Modifier.fillMaxWidth(),
             value = experienceLevel,
             onValueChange = onExperienceLevelChange,
             label = { Text(text = "Experience Level") },
-            isError = experienceLevel.isBlank()
+            isError = experienceLevel.isBlank(),
+            keyboardOptions = KeyboardOptions.Default.copy(
+                keyboardType = KeyboardType.Text,
+                imeAction = ImeAction.Next
+            ),
         )
         // Education Level
         OutlinedTextField(
@@ -468,7 +548,11 @@ fun StepFour(
             value = educationLevel,
             onValueChange = onEducationLevelChange,
             label = { Text(text = "Education Level") },
-            isError = educationLevel.isBlank()
+            isError = educationLevel.isBlank(),
+            keyboardOptions = KeyboardOptions.Default.copy(
+                keyboardType = KeyboardType.Text,
+                imeAction = ImeAction.Done
+            ),
         )
         // Navigation Buttons
         Row(
@@ -498,8 +582,10 @@ fun StepFive(
     onDeadlineDateClick: () -> Unit,
     onExpandedChange: (Boolean) -> Unit,
     onPrevious: () -> Unit,
-    onSubmit: () -> Unit
+    onSubmit: () -> Unit,
+    sharedViewModel: SharedViewModel // Add this parameter to access ViewModel
 ) {
+    val context = LocalContext.current
     Column(
         modifier = Modifier
             .padding(start = 60.dp, end = 60.dp, bottom = 400.dp)
@@ -507,7 +593,15 @@ fun StepFive(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
-        Text(text = "Step 5", fontSize = 24.sp)
+        val schoolLogo = R.drawable.ist_logo
+        Image(
+            painter = painterResource(id = schoolLogo),
+            contentDescription = "School Logo",
+            modifier = Modifier
+                .size(200.dp)
+                .shadow(4.dp),
+            contentScale = ContentScale.Crop
+        )
 
         // Deadline Date Selector
         OutlinedTextField(
@@ -526,13 +620,14 @@ fun StepFive(
         )
 
         // Skill Selection
-        SkillSelection(
+        SkilledSelection(
             selectedSkills = selectedSkills,
-            onSkillSelected = onSkillSelected,
-            onSkillDeselected = onSkillDeselected,
-            skills = skills,
-            expanded = expanded,
-            onExpandedChange = onExpandedChange
+            onSkillSelected = onSkillSelected,     // Pass the function for selecting a skill
+            onSkillDeselected = onSkillDeselected, // Pass the function for deselecting a skill
+            skills = skills,                       // Pass the list of available skills
+            expanded = expanded,                   // Pass the expanded state
+            onExpandedChange = onExpandedChange,   // Callback to change expanded state
+            saveSkill = { skillData -> sharedViewModel.saveSkill(skillData, context = context) } // Use sharedViewModel's saveSkill
         )
 
         // Navigation Buttons
@@ -553,42 +648,106 @@ fun StepFive(
 }
 
 
+
+
+
 @Composable
-fun SkillSelection(
+fun SkilledSelection(
     selectedSkills: List<String>,
-    onSkillSelected: (String) -> Unit,
-    onSkillDeselected: (String) -> Unit,
+    onSkillSelected: (String) -> Unit,    // Function to add skill
+    onSkillDeselected: (String) -> Unit,  // Function to remove skill
     skills: List<SkillData>,
     expanded: Boolean,
-    onExpandedChange: (Boolean) -> Unit
+    onExpandedChange: (Boolean) -> Unit,
+    saveSkill: (SkillData) -> Unit        // Function to save new skill to Firestore
 ) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text(text = "Select Skills")
-        Button(
-            onClick = { onExpandedChange(true) },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(text = if (selectedSkills.isEmpty()) "Select Skills" else selectedSkills.joinToString(", "))
+    val context = LocalContext.current
+    var newSkill by remember { mutableStateOf("") }
+    val firestore = FirebaseFirestore.getInstance() // Firestore instance
+
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Button(onClick = { onExpandedChange(true) }, modifier = Modifier.fillMaxWidth()) {
+            Text(if (selectedSkills.isEmpty()) "Select Skills" else selectedSkills.joinToString(", "))
         }
+
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { onExpandedChange(false) }
         ) {
-            skills.forEach { skill ->
-                val isSelected = selectedSkills.contains(skill.skillName)
+            // Display existing skills from Firestore or list
+            skills.forEach { skillData ->
+                val skillName = skillData.skillName
                 DropdownMenuItem(
                     onClick = {
-                        if (isSelected) {
-                            onSkillDeselected(skill.skillName)
+                        if (selectedSkills.contains(skillName)) {
+                            onSkillDeselected(skillName) // Deselect skill
                         } else {
-                            onSkillSelected(skill.skillName)
+                            onSkillSelected(skillName) // Select skill
                         }
+                        onExpandedChange(false) // Close the menu
                     },
-                    text = { Text(text = skill.skillName) }
+                    text = { Text(skillName) }
                 )
             }
+
+            // Add new skill input field
+            DropdownMenuItem(
+                onClick = { /* Do nothing */ },
+                text = {
+                    OutlinedTextField(
+                        value = newSkill,
+                        onValueChange = { newSkill = it },
+                        label = { Text("Add New Skill") },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            )
+
+            // Add New Skill Button
+            DropdownMenuItem(
+                onClick = {
+                    if (newSkill.isNotBlank()) {
+                        // Check if skill exists in the list
+                        val skillExists = skills.any { it.skillName.equals(newSkill, ignoreCase = true) }
+
+                        if (!skillExists && !selectedSkills.contains(newSkill)) {
+                            // Save skill to Firebase Firestore
+                            val newSkillID = UUID.randomUUID().toString() // Generate unique ID
+                            val newSkillData = SkillData(skillID = newSkillID, skillName = newSkill)
+
+                            // Add new skill to Firestore collection
+                            firestore.collection("skills")
+                                .document(newSkillID) // Use the generated UUID as the document ID
+                                .set(newSkillData)
+                                .addOnSuccessListener {
+                                    // Skill successfully added to Firestore
+                                    onSkillSelected(newSkill) // Add the new skill locally
+                                    newSkill = "" // Reset the input field
+                                    Toast.makeText(context, "Skill added successfully", Toast.LENGTH_SHORT).show()
+                                }
+                                .addOnFailureListener { e ->
+                                    // Handle Firestore error
+                                    Toast.makeText(context, "Failed to add skill: ${e.message}", Toast.LENGTH_SHORT).show()
+                                }
+                        } else {
+                            Toast.makeText(context, "Skill already exists", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    onExpandedChange(false) // Close the dropdown menu
+                },
+                text = { Text("Add Skill") }
+            )
         }
     }
 }
+
+
+
+
+
+
+
+
+
 
 

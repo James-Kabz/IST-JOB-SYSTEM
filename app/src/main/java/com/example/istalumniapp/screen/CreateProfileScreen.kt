@@ -78,7 +78,7 @@ import com.example.istalumniapp.nav.Screens
 import com.example.istalumniapp.utils.ProfileViewModel
 
 @Composable
-fun CreateProfileScreen(navController: NavController, profileViewModel: ProfileViewModel) {
+fun CreateProfileScreen(navController: NavController, profileViewModel: ProfileViewModel,sharedViewModel: SharedViewModel) {
     var fullName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
@@ -199,6 +199,7 @@ fun CreateProfileScreen(navController: NavController, profileViewModel: ProfileV
                     expanded = skillsExpanded,
                     onExpandedChange = { skillsExpanded = it },
                     onPrevious = { currentStep = 1 },
+                    sharedViewModel = sharedViewModel,
                     onNext = {
                         if (currentJob.isBlank() || currentEmployer.isBlank() || selectedSkills.isEmpty()) {
                             errorMessage = "Please fill in all the fields"
@@ -434,11 +435,12 @@ fun ProcedureTwo(
     skills: List<SkillData>,
     expanded: Boolean,
     onExpandedChange: (Boolean) -> Unit,
+    sharedViewModel: SharedViewModel,
     onPrevious: () -> Unit,
     onNext: () -> Unit
 ) {
     var skillSelectionError by remember { mutableStateOf("") }
-
+    val context = LocalContext.current
     val onSkillSelectedWithLimit = { skill: String ->
         if (selectedSkills.size >= 5 && !selectedSkills.contains(skill)) {
             skillSelectionError = "You can select up to 5 skills only."
@@ -503,13 +505,14 @@ fun ProcedureTwo(
         // Skill Selection Section
         Text(text = "Select Your Skills", style = MaterialTheme.typography.headlineMedium)
 
-        SkillSelection(
+        SkilledSelection(
             selectedSkills = selectedSkills,
             onSkillSelected = onSkillSelectedWithLimit,
             onSkillDeselected = onSkillDeselected,
             skills = skills,
             expanded = expanded,
-            onExpandedChange = onExpandedChange
+            onExpandedChange = onExpandedChange,
+            saveSkill = { skillData -> sharedViewModel.saveSkill(skillData, context = context) }
         )
 
         if (skillSelectionError.isNotEmpty()) {
@@ -586,7 +589,11 @@ fun ProcedureThree(
                 IconButton(onClick = { expanded = !expanded }) {
                     Icon(Icons.Default.ArrowDropDown, contentDescription = "Select Degree")
                 }
-            }
+            },
+            keyboardOptions = KeyboardOptions.Default.copy(
+                keyboardType = KeyboardType.Text,
+                imeAction = ImeAction.Next
+            ),
         )
 
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {

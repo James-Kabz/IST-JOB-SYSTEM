@@ -50,6 +50,10 @@ fun ViewAlumniProfilesScreen(
     var profilePhotoUrl by remember { mutableStateOf<String?>(null) }
     val loadingProfile = remember { mutableStateOf(true) }
 
+    // Pagination state
+    var currentPage by remember { mutableStateOf(0) } // Track the current page (starts at 0)
+    val itemsPerPage = 5 // Number of items to show per page
+
     // Fetch user role and profile photo
     LaunchedEffect(Unit) {
         val uid = FirebaseAuth.getInstance().currentUser?.uid
@@ -80,6 +84,9 @@ fun ViewAlumniProfilesScreen(
         )
     }
 
+    // Calculate the total number of pages based on profiles size and items per page
+    val totalPages = (alumniProfiles.size + itemsPerPage - 1) / itemsPerPage
+
     // Main Scaffold with the TopBar and BottomBar
     Scaffold(
         topBar = {
@@ -93,7 +100,11 @@ fun ViewAlumniProfilesScreen(
             )
         },
         bottomBar = {
-            DashboardBottomBar(navController = navController, userRole = userRole, notificationViewModel = notificationViewModel)
+            DashboardBottomBar(
+                navController = navController,
+                userRole = userRole,
+                notificationViewModel = notificationViewModel
+            )
         }
     ) { paddingValues ->
         Box(
@@ -124,7 +135,54 @@ fun ViewAlumniProfilesScreen(
                 }
 
                 errorMessage != null -> ErrorMessage(errorMessage!!)
-                alumniProfiles.isNotEmpty() -> AlumniProfilesList(profiles = alumniProfiles, navController = navController)
+                alumniProfiles.isNotEmpty() -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        // Pagination Controls
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Button(
+                                onClick = { if (currentPage > 0) currentPage -= 1 },
+                                enabled = currentPage > 0
+                            ) {
+                                Text(text = "Previous")
+                            }
+
+                            Text(
+                                text = "Page ${currentPage + 1} of $totalPages",
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.align(Alignment.CenterVertically)
+                            )
+
+                            Button(
+                                onClick = { if (currentPage < totalPages - 1) currentPage += 1 },
+                                enabled = currentPage < totalPages - 1
+                            ) {
+                                Text(text = "Next")
+                            }
+                        }
+                        // Display the list of alumni profiles for the current page
+                        AlumniProfilesList(
+                            profiles = alumniProfiles.subList(
+                                currentPage * itemsPerPage,
+                                (currentPage * itemsPerPage + itemsPerPage).coerceAtMost(
+                                    alumniProfiles.size
+                                )
+                            ),
+                            navController = navController
+                        )
+
+
+                    }
+
+                }
+
                 else -> NoProfilesMessage()
             }
 
@@ -163,10 +221,8 @@ fun AlumniProfilesList(profiles: List<AlumniProfileData>, navController: NavCont
 }
 
 
-
-
 @Composable
-fun AlumniProfileCard(profile: AlumniProfileData,navController: NavController) {
+fun AlumniProfileCard(profile: AlumniProfileData, navController: NavController) {
     Card(
         modifier = Modifier
             .fillMaxWidth()

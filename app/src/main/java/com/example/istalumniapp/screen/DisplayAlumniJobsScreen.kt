@@ -47,32 +47,23 @@ fun DisplayAlumniJobsScreen(
     notificationViewModel: NotificationViewModel
 ) {
     var matchedJobs by remember { mutableStateOf<List<JobData>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(true) }  // Initialize as true
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var profilePhotoUrl by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
-    val coroutineScope = rememberCoroutineScope()
     var showLogoutConfirmation by remember { mutableStateOf(false) }
     var userRole by remember { mutableStateOf<String?>(null) }
-    val loading = remember { mutableStateOf(true) }
 
     // Fetch matched jobs based on alumni skills
     LaunchedEffect(Unit) {
+        isLoading = true  // Start loading
         profileViewModel.fetchMatchingJobs(context = context)
         profileViewModel.matchedJobs.collect { jobs ->
             matchedJobs = jobs
+            isLoading = false  // Set loading to false when data is fetched
         }
     }
-
-//    // Fetch profile photo
-//    LaunchedEffect(Unit) {
-//        profileViewModel.retrieveProfilePhoto(
-//            onLoading = { isLoading = it },
-//            onSuccess = { url -> profilePhotoUrl = url },
-//            onFailure = { message -> Log.e("AlumniJobsScreen", "Error fetching profile photo: $message") }
-//        )
-//    }
 
     LaunchedEffect(Unit) {
         val uid = FirebaseAuth.getInstance().currentUser?.uid
@@ -82,17 +73,14 @@ fun DisplayAlumniJobsScreen(
             userRole = documentSnapshot.getString("role") ?: "alumni"
         }
 
-            profileViewModel.retrieveProfilePhoto(
-                onLoading = { loading.value = it },
-                onSuccess = { url -> profilePhotoUrl = url },
-                onFailure = { message ->
-                    Log.e(
-                        "DisplayJobScreen",
-                        "Error fetching profile photo: $message"
-                    )
-
-                }
-            )
+        // Fetch profile photo
+        profileViewModel.retrieveProfilePhoto(
+            onLoading = { isLoading = it },  // Update loading state
+            onSuccess = { url -> profilePhotoUrl = url },
+            onFailure = { message ->
+                Log.e("DisplayJobScreen", "Error fetching profile photo: $message")
+            }
+        )
     }
 
     // Show logout confirmation dialog
@@ -108,14 +96,14 @@ fun DisplayAlumniJobsScreen(
             onDismiss = { showLogoutConfirmation = false }
         )
     }
+
     Scaffold(
         topBar = {
             DashboardTopBar(
-
                 navController = navController,
-                userRole = "alumni", // Fixed as alumni
+                userRole = userRole ?: "alumni", // Use dynamic role
                 profilePhotoUrl = profilePhotoUrl,
-                onLogoutClick = {showLogoutConfirmation = true},
+                onLogoutClick = { showLogoutConfirmation = true },
                 notificationViewModel = notificationViewModel
             )
         },
@@ -128,14 +116,17 @@ fun DisplayAlumniJobsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
-            contentAlignment = Alignment.TopCenter
+            contentAlignment = Alignment.Center // Ensure the loading indicator is centered
         ) {
             if (isLoading) {
-                CircularProgressIndicator()
+                CircularProgressIndicator() // Loading indicator works!
             } else {
                 when {
                     errorMessage != null -> {
-                        Text(text = errorMessage!!, color = MaterialTheme.colorScheme.error)
+                        Text(
+                            text = errorMessage!!,
+                            color = MaterialTheme.colorScheme.error
+                        )
                     }
                     matchedJobs.isEmpty() -> {
                         Text(
@@ -166,6 +157,7 @@ fun DisplayAlumniJobsScreen(
                 }
             }
         }
+
     }
 }
 

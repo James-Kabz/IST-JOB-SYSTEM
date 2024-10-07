@@ -4,6 +4,8 @@ import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -32,6 +34,7 @@ import com.example.istalumniapp.utils.NotificationViewModel
 import com.example.istalumniapp.utils.ProfileViewModel
 import com.example.istalumniapp.utils.SharedViewModel
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.components.Lazy
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -190,43 +193,48 @@ fun AdminDashboardCards(
             CircularProgressIndicator()
         }
     } else {
-        Column(
+        LazyColumn(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.padding(16.dp)
         ) {
-            // Card 1: Alumni Profiles Count
-            DashboardCard(
-                title = "Alumni Profiles",
-                count = alumniCount,
-                icon = Icons.Filled.Group,
-                cardColor = MaterialTheme.colorScheme.primary,
-                navController = navController,
-                route = Screens.ViewAlumniProfilesScreen.route
-            )
-
-            // Card 2: Job Listings Count
-            DashboardCard(
-                title = "Job Listings",
-                count = jobCount,
-                icon = Icons.Filled.Work,
-                cardColor = MaterialTheme.colorScheme.secondary,
-                navController = navController,
-                route = Screens.DisplayJobScreen.route
-            )
-
-            // Card 3: Job Applications Count
-            DashboardCard(
-                title = "Job Applications",
-                count = applicationCount,
-                icon = Icons.AutoMirrored.Filled.Assignment,
-                cardColor = MaterialTheme.colorScheme.tertiary,
-                navController = navController,
-                route = Screens.ViewApplicationsScreen.route
-            )
+            item {
+                // Card 1: Alumni Profiles Count
+                DashboardCard(
+                    title = "Alumni Profiles",
+                    count = alumniCount,
+                    icon = Icons.Filled.Group,
+                    cardColor = MaterialTheme.colorScheme.primary,
+                    navController = navController,
+                    route = Screens.ViewAlumniProfilesScreen.route
+                )
+            }
+            item {
+                // Card 2: Job Listings Count
+                DashboardCard(
+                    title = "Job Listings",
+                    count = jobCount,
+                    icon = Icons.Filled.Work,
+                    cardColor = MaterialTheme.colorScheme.secondary,
+                    navController = navController,
+                    route = Screens.DisplayJobScreen.route
+                )
+            }
+            item {
+                // Card 3: Job Applications Count
+                DashboardCard(
+                    title = "Job Applications",
+                    count = applicationCount,
+                    icon = Icons.AutoMirrored.Filled.Assignment,
+                    cardColor = MaterialTheme.colorScheme.tertiary,
+                    navController = navController,
+                    route = Screens.ViewApplicationsScreen.route
+                )
+            }
         }
     }
 }
+
 
 @Composable
 fun DashboardCard(
@@ -277,27 +285,25 @@ fun DashboardCard(
 @Composable
 fun AlumniDashboardCards(
     navController: NavController,
-    profileViewModel: ProfileViewModel  // ViewModel to retrieve jobs and notifications
+    profileViewModel: ProfileViewModel
 ) {
     val context = LocalContext.current
-    var jobCount by remember { mutableStateOf(0) }  // State to hold job count
-    val loading by profileViewModel.loading1.observeAsState(initial = true)// Observe loading state
+    var jobCount by remember { mutableStateOf(0) }
+    val loading by profileViewModel.loading1.observeAsState(initial = true)
 
-    // Launch data fetching once the composable is entered
+    // Get current user and userId
+    val currentUser = FirebaseAuth.getInstance().currentUser
+    val userId = currentUser?.uid // Retrieve the current user's ID
+
     LaunchedEffect(Unit) {
         profileViewModel.countMatchingJobs(
             context = context,
-            onSuccess = { count ->
-                jobCount = count  // Update job count
-            },
-            onFailure = { errorMessage ->
-                Log.e("AlumniDashboard", errorMessage)
-            }
+            onSuccess = { count -> jobCount = count },
+            onFailure = { errorMessage -> Log.e("AlumniDashboard", errorMessage) }
         )
     }
 
     if (loading) {
-        // Show a loading indicator while data is being fetched
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
@@ -305,44 +311,52 @@ fun AlumniDashboardCards(
             CircularProgressIndicator()
         }
     } else {
-        Column(
+        LazyColumn(
             verticalArrangement = Arrangement.spacedBy(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+//            horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.padding(16.dp)
         ) {
-            // Card 1: View Jobs
-            DashboardCard2(
-                title = "View Jobs",
-                description = "Browse available jobs for you.",
-                countText = "Total Jobs: $jobCount",  // Display job count
-                icon = Icons.Filled.Work,
-                cardColor = MaterialTheme.colorScheme.primary,
-                navController = navController,
-                route = Screens.DisplayAlumniJobsScreen.route
-            )
-
-            // Card 2: My Applications
-            DashboardCard2(
-                title = "My Applications",
-                description = "View and manage your job applications.",
-                icon = Icons.AutoMirrored.Filled.Assignment,
-                cardColor = MaterialTheme.colorScheme.secondary,
-                navController = navController,
-                route = Screens.DisplayApplicationScreen.route
-            )
-
-            // Card 3: Notifications or Profile Update
-            DashboardCard2(
-                title = "Notifications",
-                description = "Check your notifications and updates.",
-                icon = Icons.Filled.Notifications,
-                cardColor = MaterialTheme.colorScheme.tertiary,
-                navController = navController,
-                route = Screens.NotificationsScreen.route
-            )
+            item {
+                // Card 1: View Jobs
+                DashboardCard2(
+                    title = "View Jobs",
+                    description = "Browse available jobs for you.",
+                    countText = "Total Jobs: $jobCount",
+                    icon = Icons.Filled.Work,
+                    cardColor = MaterialTheme.colorScheme.primary,
+                    navController = navController,
+                    route = Screens.DisplayAlumniJobsScreen.route
+                )
+            }
+            item {
+                // Card 2: My Applications
+                userId?.let {
+                    DashboardCard2(
+                        title = "My Applications",
+                        description = "View and manage your job applications.",
+                        icon = Icons.AutoMirrored.Filled.Assignment,
+                        cardColor = MaterialTheme.colorScheme.secondary,
+                        navController = navController,
+                        route = "${Screens.DisplayApplicationScreen.route}/$it" // Use userId here
+                    )
+                }
+            }
+            item {
+                // Card 3: Notifications or Profile Update
+                DashboardCard2(
+                    title = "Notifications",
+                    description = "Check your notifications and updates.",
+                    icon = Icons.Filled.Notifications,
+                    cardColor = MaterialTheme.colorScheme.tertiary,
+                    navController = navController,
+                    route = Screens.NotificationsScreen.route
+                )
+            }
         }
     }
 }
+
+
 
 
 @Composable
@@ -368,11 +382,12 @@ fun DashboardCard2(
             modifier = Modifier.padding(24.dp),  // Internal padding for card content
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+
             Icon(
                 imageVector = icon,
                 contentDescription = title,
                 tint = cardColor,
-                modifier = Modifier.size(48.dp)  // Larger icon for better visual emphasis
+                modifier = Modifier.size(40.dp)  // Larger icon for better visual emphasis
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text(
@@ -625,7 +640,7 @@ fun AdminDashboard(navController: NavController) {
             IconButton(onClick = { navController.navigate(Screens.ViewApplicationsScreen.route) }) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(
-                        Icons.Filled.Assignment, // Use an icon that represents tasks
+                        Icons.AutoMirrored.Filled.Assignment, // Use an icon that represents tasks
                         contentDescription = "Applications",
                         modifier = Modifier.size(40.dp)
                     )
