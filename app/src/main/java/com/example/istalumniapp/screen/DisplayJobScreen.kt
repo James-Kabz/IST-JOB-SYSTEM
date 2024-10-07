@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -32,6 +33,7 @@ import coil.annotation.ExperimentalCoilApi
 import coil.compose.rememberAsyncImagePainter
 import coil.compose.rememberImagePainter
 import coil.request.ImageRequest
+import com.example.istalumniapp.R
 import com.example.istalumniapp.nav.Screens
 import com.example.istalumniapp.utils.JobData
 import com.example.istalumniapp.utils.NotificationViewModel
@@ -43,6 +45,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.time.LocalDate
 import java.time.ZoneId
+
 
 @Composable
 fun DisplayJobScreen(
@@ -61,6 +64,10 @@ fun DisplayJobScreen(
     val snackbarHostState = remember { SnackbarHostState() } // Snackbar host state
     val coroutineScope = rememberCoroutineScope() // Coroutine scope for launching coroutines
 
+    // Pagination state
+    var currentPage by remember { mutableStateOf(0) } // Track the current page (starts at 0)
+    val itemsPerPage = 5 // Number of items to show per page
+
     // Fetch user role and profile photo
     LaunchedEffect(Unit) {
         val uid = FirebaseAuth.getInstance().currentUser?.uid
@@ -74,12 +81,8 @@ fun DisplayJobScreen(
             onLoading = { loading.value = it },
             onSuccess = { url -> profilePhotoUrl = url },
             onFailure = { message ->
-                Log.e(
-                    "DisplayJobScreen",
-                    "Error fetching profile photo: $message"
-                )
-
-        })
+                Log.e("DisplayJobScreen", "Error fetching profile photo: $message")
+            })
     }
 
     // Fetch jobs
@@ -105,6 +108,9 @@ fun DisplayJobScreen(
         )
     }
 
+    // Calculate the total pages based on the number of jobs and items per page
+    val totalPages = (jobs.size + itemsPerPage - 1) / itemsPerPage
+
     Scaffold(
         topBar = {
             DashboardTopBar(
@@ -116,7 +122,11 @@ fun DisplayJobScreen(
             )
         },
         bottomBar = {
-            DashboardBottomBar(navController = navController, userRole = userRole, notificationViewModel = notificationViewModel)
+            DashboardBottomBar(
+                navController = navController,
+                userRole = userRole,
+                notificationViewModel = notificationViewModel
+            )
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }   // Add SnackbarHost
     ) { paddingValues ->
@@ -128,100 +138,138 @@ fun DisplayJobScreen(
         ) {
             if (isLoading) {
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize(),
-                    contentAlignment = Alignment.Center // Center content horizontally and vertically
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        CircularProgressIndicator(
-                            color = MaterialTheme.colorScheme.primary,
-                            strokeWidth = 4.dp,
-                            modifier = Modifier.size(48.dp)
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = "Retrieving Jobs, please wait...",
-                            color = MaterialTheme.colorScheme.onBackground,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.primary,
+                        strokeWidth = 4.dp,
+                        modifier = Modifier.size(48.dp)
+                    )
                 }
             } else {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    // Conditionally show the "Add Job" and "Add Skill" buttons if the user is an admin
-                    if (userRole == "admin") {
-                        Row(
-                            horizontalArrangement = Arrangement.Center,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                        ) {
-                            Button(onClick = { navController.navigate(Screens.AddJobScreen.route) }) {
-                                Text(text = "Add Job")
-                            }
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Button(onClick = { navController.navigate(Screens.AddSkillScreen.route) }) {
-                                Text(text = "Add Skill")
-                            }
-                        }
-                    }
-
-                    // Job List or Error Message
-                    when {
-                        errorMessage != null -> {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.SpaceBetween // Ensure space between list and pagination buttons
+                ) {
+                    Column(
+                        modifier = Modifier.weight(1f), // This ensures that LazyColumn only takes available space
+                        verticalArrangement = Arrangement.Top
+                    ) {
+                        // Conditionally show the "Add Job" and "Add Skill" buttons if the user is an admin
+                        if (userRole == "admin") {
+                            Row(
+                                horizontalArrangement = Arrangement.Center,
+                                modifier = Modifier.fillMaxWidth()
                             ) {
-                                Text(text = errorMessage!!, color = MaterialTheme.colorScheme.error)
-                            }
-                        }
-
-                        jobs.isEmpty() -> {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "No jobs available at the moment.",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    textAlign = TextAlign.Center,
-                                    color = MaterialTheme.colorScheme.onBackground
-                                )
-                            }
-                        }
-
-                        else -> {
-                            // Display the list of jobs once they are loaded
-                            LazyColumn(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(10.dp),
-                                verticalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                items(jobs) { job ->
-                                    JobItem(
-                                        job = job,
-                                        userRole = userRole ?: "",
-                                        navController = navController,
-                                        sharedViewModel = sharedViewModel,
-                                        onJobDeleted = { deletedJob ->
-                                            jobs =
-                                                jobs.filterNot { it.jobID == deletedJob.jobID } // Update the list
-                                            coroutineScope.launch {
-                                                snackbarHostState.showSnackbar("Job deleted successfully")
-                                            }
-                                        }
-                                    )
+                                Button(onClick = { navController.navigate(Screens.AddJobScreen.route) }) {
+                                    Text(text = "Add Job")
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Button(onClick = { navController.navigate(Screens.AddSkillScreen.route) }) {
+                                    Text(text = "Add Skill")
                                 }
                             }
                         }
 
+                        // Job List or Error Message
+                        when {
+                            errorMessage != null -> {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = errorMessage!!,
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                }
+                            }
 
+                            jobs.isEmpty() -> {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "No jobs available at the moment.",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        textAlign = TextAlign.Center,
+                                        color = MaterialTheme.colorScheme.onBackground
+                                    )
+                                }
+                            }
+
+                            else -> {
+
+                                // Pagination Controls
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Button(
+                                        onClick = {
+                                            if (currentPage > 0) {
+                                                currentPage -= 1
+                                            }
+                                        },
+                                        enabled = currentPage > 0
+                                    ) {
+                                        Text(text = "Previous")
+                                    }
+
+                                    Text(
+                                        text = "Page ${currentPage + 1} of $totalPages",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        modifier = Modifier.align(Alignment.CenterVertically)
+                                    )
+
+                                    Button(
+                                        onClick = {
+                                            if (currentPage < totalPages - 1) {
+                                                currentPage += 1
+                                            }
+                                        },
+                                        enabled = currentPage < totalPages - 1
+                                    ) {
+                                        Text(text = "Next")
+                                    }
+                                }
+
+                                // Display the list of jobs for the current page
+                                LazyColumn(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(10.dp),
+                                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    val start = currentPage * itemsPerPage
+                                    val end = (start + itemsPerPage).coerceAtMost(jobs.size)
+
+                                    items(jobs.subList(start, end)) { job ->
+                                        JobItem(
+                                            job = job,
+                                            userRole = userRole ?: "",
+                                            navController = navController,
+                                            sharedViewModel = sharedViewModel,
+                                            onJobDeleted = { deletedJob ->
+                                                jobs =
+                                                    jobs.filterNot { it.jobID == deletedJob.jobID } // Update the list
+                                                coroutineScope.launch {
+                                                    snackbarHostState.showSnackbar("Job deleted successfully")
+                                                }
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
+
+
+
+
                 }
             }
         }
@@ -277,79 +325,96 @@ fun JobItem(
     )
 
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(8.dp))
-                .animateContentSize(
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioLowBouncy,
-                        stiffness = Spring.StiffnessLow
-                    )
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .animateContentSize(
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioLowBouncy,
+                    stiffness = Spring.StiffnessLow
                 )
-                .background(color = color)
-        ) {
-            if (userRole == "admin") {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Button(onClick = { navController.navigate("edit_job/${job.jobID}") }) {
-                        Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit Job")
-                    }
-                    IconButton(onClick = { showDeleteConfirmation = true }) {
-                        Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete Job")
-                    }
-                }
-            }
-
-            if (job.companyLogo.isNotEmpty()) {
-                val painter = rememberAsyncImagePainter(
-                    ImageRequest.Builder(LocalContext.current).data(job.companyLogo)
-                        .apply { crossfade(true) }.build()
-                )
-                Image(
-                    painter = painter,
-                    contentDescription = "Company Logo",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .size(100.dp)
-                        .align(Alignment.CenterHorizontally)
-                        .clip(RoundedCornerShape(8.dp))
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-
-            Text(
-                modifier = Modifier.padding(10.dp),
-                text = job.title,
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.primary
             )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            if (!isExpanded) {
-                Text(
-                    modifier = Modifier.padding(10.dp),
-                    text = job.description.take(100) + if (job.description.length > 100) "..." else "",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            if (isExpanded) {
-                JobDetails(job, deadlineDate, currentDate, navController, userRole)
-                TextButton(onClick = { isExpanded = false }) {
-                    Text(text = "Show Less")
+            .background(color = color)
+    ) {
+        if (userRole == "admin") {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Button(onClick = { navController.navigate("edit_job/${job.jobID}") }) {
+                    Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit Job")
                 }
-            } else {
-                TextButton(onClick = { isExpanded = true }) {
-                    Text(text = "View More")
+                IconButton(onClick = { showDeleteConfirmation = true }) {
+                    Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete Job")
                 }
             }
         }
+
+        val defaultPhoto =
+            painterResource(id = R.drawable.dashboard_default) // Use the default "ist_logo.png"
+
+        if (job.companyLogo.isNotEmpty()) {
+            // If the company logo is available, load it
+            val painter = rememberAsyncImagePainter(
+                ImageRequest.Builder(LocalContext.current).data(job.companyLogo)
+                    .apply { crossfade(true) }.build()
+            )
+            Image(
+                painter = painter,
+                contentDescription = "Company Logo",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(100.dp)
+                    .align(Alignment.CenterHorizontally)
+                    .clip(RoundedCornerShape(8.dp))
+            )
+        } else {
+            // Display the default job logo (ist_logo.png) when companyLogo is null or empty
+            Image(
+                painter = defaultPhoto,
+                contentDescription = "Default Job Logo",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(100.dp)
+                    .align(Alignment.CenterHorizontally)
+                    .clip(RoundedCornerShape(8.dp))
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+
+        Text(
+            modifier = Modifier.padding(10.dp),
+            text = job.title,
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        if (!isExpanded) {
+            Text(
+                modifier = Modifier.padding(10.dp),
+                text = job.description.take(100) + if (job.description.length > 100) "..." else "",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        if (isExpanded) {
+            JobDetails(job, deadlineDate, currentDate, navController, userRole)
+            TextButton(onClick = { isExpanded = false }) {
+                Text(text = "Show Less")
+            }
+        } else {
+            TextButton(onClick = { isExpanded = true }) {
+                Text(text = "View More")
+            }
+        }
+    }
 
     if (showDeleteConfirmation) {
         DeleteJobConfirmationDialog(

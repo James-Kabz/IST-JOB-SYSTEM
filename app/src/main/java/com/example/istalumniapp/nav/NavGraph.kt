@@ -142,7 +142,7 @@ fun NavGraph(
         composable(
             route = Screens.CreateProfileScreen.route
         ) {
-            CreateProfileScreen(navController = navController, profileViewModel = profileViewModel)
+            CreateProfileScreen(navController = navController, profileViewModel = profileViewModel,sharedViewModel = sharedViewModel)
         }
 
 //        JOB SCREENS

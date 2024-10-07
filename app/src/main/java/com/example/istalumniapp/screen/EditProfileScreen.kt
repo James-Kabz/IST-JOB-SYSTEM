@@ -8,6 +8,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -18,6 +19,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
@@ -135,7 +138,11 @@ fun EditProfileScreen(
                 onValueChange = { profileData = profileData.copy(fullName = it) },
                 label = { Text("Name") },
                 modifier = Modifier.fillMaxWidth(),
-                readOnly = true
+                readOnly = true,
+                keyboardOptions = KeyboardOptions.Default.copy(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Next
+                ),
             )
 
             OutlinedTextField(
@@ -143,56 +150,88 @@ fun EditProfileScreen(
                 onValueChange = { profileData = profileData.copy(email = it) },
                 label = { Text("Email") },
                 modifier = Modifier.fillMaxWidth(),
-                readOnly = true
+                readOnly = true,
+                keyboardOptions = KeyboardOptions.Default.copy(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Next
+                ),
             )
 
             OutlinedTextField(
                 value = profileData.graduationYear,
                 onValueChange = { profileData = profileData.copy(graduationYear = it) },
                 label = { Text("Graduation Year") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions.Default.copy(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Next
+                ),
             )
 
             OutlinedTextField(
                 value = profileData.customDegree ?: "",
                 onValueChange = { profileData = profileData.copy(customDegree = it) },
                 label = { Text("Custom Degree") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions.Default.copy(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Next
+                ),
             )
 
             OutlinedTextField(
                 value = profileData.currentJob,
                 onValueChange = { profileData = profileData.copy(currentJob = it) },
                 label = { Text("Current Job") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions.Default.copy(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Next
+                ),
             )
 
             OutlinedTextField(
                 value = profileData.currentEmployee,
                 onValueChange = { profileData = profileData.copy(currentEmployee = it) },
                 label = { Text("Current Employer") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions.Default.copy(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Next
+                ),
             )
 
             OutlinedTextField(
                 value = profileData.location,
                 onValueChange = { profileData = profileData.copy(location = it) },
                 label = { Text("Location") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions.Default.copy(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Next
+                ),
             )
 
             OutlinedTextField(
                 value = profileData.phone,
                 onValueChange = { profileData = profileData.copy(phone = it) },
                 label = { Text("Phone Number") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions.Default.copy(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Next
+                ),
             )
 
             OutlinedTextField(
                 value = profileData.linkedIn,
                 onValueChange = { profileData = profileData.copy(linkedIn = it) },
                 label = { Text("LinkedIn") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions.Default.copy(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Next
+                ),
             )
 
             // Skills selection (dynamic)

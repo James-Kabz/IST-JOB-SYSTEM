@@ -10,6 +10,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -86,7 +87,7 @@ fun ViewProfileScreen(navController: NavController, profileViewModel: ProfileVie
             .padding(20.dp, top = 30.dp)
     ) {
         // Add back button
-        IconButton(onClick = { navController.popBackStack() }) {
+        IconButton(onClick = { navController.navigate(Screens.DashboardScreen.route) }) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = "Back",
@@ -159,89 +160,104 @@ fun ViewProfileScreen(navController: NavController, profileViewModel: ProfileVie
 
 @Composable
 fun ProfileDetails(profile: AlumniProfileData, profilePhotoUrl: String?, navController: NavController) {
-    var isLoading by remember { mutableStateOf(false) }  // Loading state for the button click
+    var isLoading by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     Column(
         modifier = Modifier
-            .padding(16.dp)
             .fillMaxWidth()
-            .verticalScroll(rememberScrollState()),
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // If the loading state is true, display the CircularProgressIndicator
-        if (isLoading) {
-            CircularProgressIndicator(
-                color = MaterialTheme.colorScheme.primary,
-                strokeWidth = 4.dp,
-                modifier = Modifier.size(48.dp)
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "Loading profile...",
-                color = MaterialTheme.colorScheme.onBackground,
-                style = MaterialTheme.typography.bodyMedium
-            )
-        } else {
-            Button(onClick = {
-                isLoading = false // Set loading to true when user clicks the button
-                // Simulate delay or actual profile load before navigation
-                // You can add a delay here or make sure any required data is fetched
+        // Profile header: Photo, Name, and Institute
+        Box(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            // Profile image
+            ProfileImage(profile.profilePhotoUri ?: "", modifier = Modifier.padding(end = 50.dp))
 
-                navController.navigate(Screens.EditProfileScreen.route)
+//            Spacer(modifier = Modifier.padding(end = 40.dp))
 
-                isLoading = false // Set to false after navigation (optional, depending on flow)
-            }) {
-                Text(text = "Edit Profile")
-            }
-
-            // Other Profile Details UI below the button
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 24.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                ProfileImage(profile.profilePhotoUri ?: "")
-            }
-
-            // Display profile information
-            Text(
-                text = profile.fullName,
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            Text(
-                text = profile.currentJob,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(bottom = 16.dp)
-            ) {
-                Icon(
-                    Icons.Default.LocationOn,
-                    contentDescription = "Location",
-                    tint = Color.Gray,
-                    modifier = Modifier.size(20.dp)
+            // Profile name and details
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = profile.fullName,
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(top = 8.dp)
                 )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(text = profile.location, style = MaterialTheme.typography.bodyMedium)
+
+                Text(
+                    text = profile.location,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // "Open to work" section
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 50.dp)
+                        .border(1.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp))
+                        .padding(8.dp),
+                ) {
+                    Text(
+                        text = "Current Job: ${profile.currentJob}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Buttons for editing and adding sections
+        Row(
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Button(onClick = {
+                navController.navigate(Screens.EditProfileScreen.route)
+            }) {
+                Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit Profile")
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Edit Profile")
             }
 
-            // Rest of the profile sections (Contact, Education, Skills)
-            HorizontalDivider()
-            SectionHeader("Contact Information")
-            ContactInfoSection(profile)
-            HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
-            SectionHeader("Education")
-            EducationSection(profile)
-            HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
-            SectionHeader("Skills")
-            SkillsSection(profile.skills)
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Button(onClick = { /* Handle Add Section */ }) {
+                Icon(imageVector = Icons.Default.Add, contentDescription = "Add Section")
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Add Section")
+            }
         }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Profile details (Contact Info, Education, Skills)
+        HorizontalDivider()
+
+        // Contact Information
+        SectionHeader("Contact Information")
+        ContactInfoSection(profile)
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+
+        // Education Section
+        SectionHeader("Education")
+        EducationSection(profile)
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+
+        // Skills Section
+        SectionHeader("Skills")
+        SkillsSection(profile.skills)
     }
 }
 
@@ -251,7 +267,8 @@ fun SectionHeader(title: String) {
     Text(
         text = title,
         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-        modifier = Modifier.padding(vertical = 8.dp)
+        modifier = Modifier.padding(vertical = 8.dp),
+        color = MaterialTheme.colorScheme.onBackground
     )
 }
 
@@ -326,15 +343,12 @@ fun LinkedInRow(linkedInUrl: String) {
 @Composable
 fun SkillsSection(skills: List<String>) {
     if (skills.isNotEmpty()) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            skills.forEach { skill ->
-                Text(
-                    text = skill,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(bottom = 4.dp)
-                )
-            }
-        }
+        Text(
+            text = skills.joinToString(", "),
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(bottom = 4.dp),
+            color = Color.White
+        )
     } else {
         Text(
             text = "No skills listed.",
@@ -343,6 +357,7 @@ fun SkillsSection(skills: List<String>) {
         )
     }
 }
+
 
 @Composable
 fun InfoRow(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, value: String) {
@@ -360,20 +375,21 @@ fun InfoRow(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String
             )
             Text(
                 text = value,
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onTertiaryContainer
             )
         }
     }
 }
 
 @Composable
-fun ProfileImage(profileUrl: String) {
+fun ProfileImage(profileUrl: String,modifier: Modifier = Modifier) {
     // Load profile image with Coil, and handle empty URL case efficiently
     val painter = rememberAsyncImagePainter(
         ImageRequest.Builder(LocalContext.current)
             .data(profileUrl.ifBlank { R.drawable.placeholder }) // Handle empty URL properly
             .crossfade(true)
-            .placeholder(R.drawable.placeholder)
+//            .placeholder(R.drawable.placeholder)
             .error(R.drawable.error)
             .build()
     )

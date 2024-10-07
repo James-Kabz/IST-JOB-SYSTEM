@@ -21,6 +21,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -127,7 +128,11 @@ fun JobApplicationScreen(
                     value = linkedIn,
                     onValueChange = { linkedIn = it },
                     label = { Text("LinkedIn Profile") },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions.Default.copy(
+                        keyboardType = KeyboardType.Text,
+                        imeAction = ImeAction.Next
+                    ),
                 )
 
                 // Education Input
@@ -135,7 +140,11 @@ fun JobApplicationScreen(
                     value = education,
                     onValueChange = { education = it },
                     label = { Text("Education") },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions.Default.copy(
+                        keyboardType = KeyboardType.Text,
+                        imeAction = ImeAction.Next
+                    ),
                 )
 
                 // Address Input
@@ -143,7 +152,11 @@ fun JobApplicationScreen(
                     value = address,
                     onValueChange = { address = it },
                     label = { Text("Address") },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions.Default.copy(
+                        keyboardType = KeyboardType.Text,
+                        imeAction = ImeAction.Next
+                    ),
                 )
 
                 // Phone Input
@@ -151,7 +164,10 @@ fun JobApplicationScreen(
                     value = phone,
                     onValueChange = { phone = it },
                     label = { Text("Phone") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    keyboardOptions = KeyboardOptions.Default.copy(
+                        keyboardType = KeyboardType.Phone,
+                        imeAction = ImeAction.Next
+                    ),
                     modifier = Modifier.fillMaxWidth()
                 )
 
