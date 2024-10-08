@@ -126,4 +126,21 @@ class NotificationViewModel(private val context: Context) : ViewModel() {
                 }
         }
     }
+
+    // Function to delete a notification from Firestore
+    fun deleteNotification(notificationId: String, onResult: (Boolean) -> Unit) {
+        firestore.collection("notifications").document(notificationId)
+            .delete()
+            .addOnSuccessListener {
+                // Notification deleted successfully
+                onResult(true)
+                // Optionally refresh the notifications list after deletion
+                fetchNotifications()
+            }
+            .addOnFailureListener { exception ->
+                Log.e("NotificationViewModel", "Error deleting notification: ${exception.message}")
+                onResult(false)
+            }
+    }
+
 }

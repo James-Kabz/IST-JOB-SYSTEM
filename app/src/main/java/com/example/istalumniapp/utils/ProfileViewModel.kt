@@ -207,7 +207,7 @@ class ProfileViewModel : ViewModel() {
                     _matchedJobs.value = matchingJobs
                     Toast.makeText(
                         context,
-                        "Found ${matchingJobs.size} matching jobs",
+                        "Found ${matchingJobs.size} matching job postings.",
                         Toast.LENGTH_SHORT
                     ).show()
 

@@ -132,8 +132,8 @@ class SharedViewModel : ViewModel() {
         val notificationData = NotificationData(
             id = UUID.randomUUID().toString(),
             profileID = profileID,
-            title = "New Job Matches Your Skills!",
-            message = "A job titled \"${jobData.title}\" matches your skills.",
+            title = "New Job Posted !\uD83D\uDE01",
+            message = "A Job titled \"${jobData.title}\" matches your skills.",
             timestamp = System.currentTimeMillis(),
             read = false
         )

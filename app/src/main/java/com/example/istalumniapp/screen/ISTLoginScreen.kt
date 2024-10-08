@@ -24,6 +24,8 @@ import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
 import android.content.Context
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -136,27 +138,33 @@ fun ISTLoginScreen(navController: NavController) {
             }
         } else {
             Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Top,
                 modifier = Modifier.fillMaxSize()
-                    .padding(top = 16.dp)
+                    .padding(top = 25.dp)
+                    .padding(15.dp)
             ) {
                 // Move the Image to the top of the screen and increase its size
+                IconButton(onClick = { navController.navigate(Screens.ISTPreviewScreen.route) }) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = MaterialTheme.colorScheme.inverseSurface
+                    )
+                }
                 Image(
                     modifier = Modifier
-                        .size(150.dp) // Increase the size of the image
-                        .clip(RoundedCornerShape(75.dp)), // Adjust for circular shape if needed
+                        .align(Alignment.CenterHorizontally)
+                        .size(250.dp),
                     painter = painterResource(R.drawable.ist_logo), // Ensure R.drawable.ist_logo is correct
                     contentDescription = "App Logo"
                 )
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(15.dp))
 
                 Card(
                     modifier = Modifier
-                        .padding(16.dp)
+                        .padding(10.dp)
                         .fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceBright),
                     elevation = CardDefaults.cardElevation(8.dp)
                 ) {
                     Column(
@@ -230,7 +238,8 @@ fun ISTLoginScreen(navController: NavController) {
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        Button(
+                        Button(modifier = Modifier.align(Alignment.CenterHorizontally)
+                            .width(250.dp),
                             onClick = {
                                 if (email.isNotEmpty() && password.isNotEmpty()) {
                                     isLoading = true
@@ -249,7 +258,7 @@ fun ISTLoginScreen(navController: NavController) {
                                     Toast.makeText(navController.context, "Please enter both email and password", Toast.LENGTH_LONG).show()
                                 }
                             },
-                            modifier = Modifier.fillMaxWidth()
+                            enabled = email.isNotEmpty() && password.isNotEmpty()
                         ) {
                             Text("Log In")
                         }

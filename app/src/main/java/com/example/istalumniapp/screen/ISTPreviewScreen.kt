@@ -12,8 +12,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -42,7 +44,7 @@ fun ISTPreviewScreen(navController: NavController) {
         // Image as background
         
         Image(
-            painter = painterResource(id = R.drawable.purple_honey),
+            painter = painterResource(id = R.drawable.preview_screen2),
             contentDescription = "Background Image",
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop
@@ -52,8 +54,7 @@ fun ISTPreviewScreen(navController: NavController) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight()
-                .padding(50.dp),
+                .padding(20.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -67,21 +68,24 @@ fun ISTPreviewScreen(navController: NavController) {
                 text = "Welcome to IST Alumni App",
                 color = Color.White,
                 style = MaterialTheme.typography.headlineMedium,
-                fontSize = 20.sp
+//                fontSize = 20.sp
             )
             Text(
                 text = "Dive in to find your dream job",
-                color = Color.White,
-                style = MaterialTheme.typography.headlineMedium,
-                fontSize = 18.sp
-            )
-            Button(
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.headlineSmall,
+                )
+            Button(colors = ButtonColors(
+                containerColor = Color.Red,
+                contentColor = Color.White,
+                disabledContainerColor = Color.DarkGray,
+                disabledContentColor = Color.DarkGray
+            ),
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+                    .width(250.dp),
                 onClick = {
                     navController.navigate(Screens.ISTLoginScreen.route)
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp),
 
             ) {
                 Text(text = "Login")
@@ -95,12 +99,17 @@ fun ISTPreviewScreen(navController: NavController) {
             )
 
             Button(
+                colors = ButtonColors(
+                    containerColor = Color.Red,
+                    contentColor = Color.White,
+                    disabledContainerColor = Color.DarkGray,
+                    disabledContentColor = Color.DarkGray
+                ),
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+                    .width(250.dp),
                 onClick = {
                     navController.navigate(Screens.ISTRegisterScreen.route)
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp)
             ) {
                 Text(text = "Sign Up")
             }
