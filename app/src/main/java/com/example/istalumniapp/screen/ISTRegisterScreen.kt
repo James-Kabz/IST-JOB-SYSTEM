@@ -7,6 +7,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -41,6 +43,7 @@ fun ISTRegisterScreen(navController: NavController) {
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var successMessage by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(false) }  // Loading state
+    var isPasswordValid by remember { mutableStateOf(false) }  // Password validation state
 
     val visualTransformation = if (passwordVisible) {
         VisualTransformation.None
@@ -48,13 +51,23 @@ fun ISTRegisterScreen(navController: NavController) {
         PasswordVisualTransformation()
     }
 
+    // Password validation rules
+    val isPasswordLengthValid = password.length >= 8
+    val containsUppercase = password.any { it.isUpperCase() }
+    val containsDigit = password.any { it.isDigit() }
+    val containsSpecialChar = password.any { !it.isLetterOrDigit() }
+
+    // Password is valid if all conditions are met
+    isPasswordValid = isPasswordLengthValid && containsUppercase && containsDigit && containsSpecialChar
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
+            .background(MaterialTheme.colorScheme.surfaceContainer),
         contentAlignment = Alignment.Center
     ) {
         if (isLoading) {
+
             // Show Circular Progress Indicator when loading
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -68,46 +81,54 @@ fun ISTRegisterScreen(navController: NavController) {
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
+
         } else {
+            Column(
+                modifier = Modifier.fillMaxHeight()
+                    .padding(top = 25.dp)
+
+            ) {
+                IconButton(onClick = { navController.navigate(Screens.ISTPreviewScreen.route) }) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = MaterialTheme.colorScheme.inverseSurface
+                    )
+                }
+
+                Image(
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .size(250.dp),
+                    painter = painterResource(R.drawable.ist_logo),
+                    contentDescription = "App Logo"
+                )
+
             // Main registration form
             Card(
-                modifier = Modifier
-                    .padding(16.dp)
-                    .fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(8.dp)
+                modifier = Modifier.padding(5.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceBright),
+                elevation = CardDefaults.cardElevation(8.dp),
             ) {
+
                 Column(
                     modifier = Modifier
                         .padding(16.dp)
                         .fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Start
-                    ) {
-                        Text(
-                            text = "Create an Account",
-                            color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontSize = 24.sp
-                        )
-                    }
 
-                    Spacer(modifier = Modifier.height(16.dp))
 
-                    Image(
-                        modifier = Modifier
-                            .size(100.dp)
-                            .clip(RoundedCornerShape(56.dp)),
-                        painter = painterResource(R.drawable.ist_logo),
-                        contentDescription = "Login"
+                    Text(
+                        text = "Create an Account",
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontSize = 24.sp
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
 
+                    // Email TextField
                     TextField(
                         value = email,
                         onValueChange = { email = it },
@@ -122,6 +143,7 @@ fun ISTRegisterScreen(navController: NavController) {
 
                     Spacer(modifier = Modifier.height(16.dp))
 
+                    // Password TextField
                     TextField(
                         value = password,
                         onValueChange = { password = it },
@@ -130,13 +152,38 @@ fun ISTRegisterScreen(navController: NavController) {
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions.Default.copy(
-                            keyboardType = KeyboardType.Text,
+                            keyboardType = KeyboardType.Password,
                             imeAction = ImeAction.Next
                         ),
                     )
 
+                    // Password validation indicators
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            text = if (isPasswordLengthValid) "✓ At least 8 characters" else "✕ At least 8 characters",
+                            color = if (isPasswordLengthValid) Color.Green else MaterialTheme.colorScheme.tertiary,
+                            fontSize = 12.sp
+                        )
+                        Text(
+                            text = if (containsUppercase) "✓ Contains an uppercase letter" else "✕ Contains an uppercase letter",
+                            color = if (containsUppercase) Color.Green else MaterialTheme.colorScheme.tertiary,
+                            fontSize = 12.sp
+                        )
+                        Text(
+                            text = if (containsDigit) "✓ Contains a digit" else "✕ Contains a digit",
+                            color = if (containsDigit) Color.Green else MaterialTheme.colorScheme.tertiary,
+                            fontSize = 12.sp
+                        )
+                        Text(
+                            text = if (containsSpecialChar) "✓ Contains a special character" else "✕ Contains a special character",
+                            color = if (containsSpecialChar) Color.Green else MaterialTheme.colorScheme.tertiary,
+                            fontSize = 12.sp
+                        )
+                    }
+
                     Spacer(modifier = Modifier.height(16.dp))
 
+                    // Confirm Password TextField
                     TextField(
                         value = confirmPassword,
                         onValueChange = { confirmPassword = it },
@@ -165,45 +212,54 @@ fun ISTRegisterScreen(navController: NavController) {
                             }
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text(text = "Show Password", color = Color.Black)
+                        Text(text = "Show Password", color = Color.White)
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
+                    // Register button (disabled if password is invalid)
                     Button(
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                            .width(250.dp),
                         onClick = {
                             isLoading = true  // Start loading
-                            // Validate email and passwords
-                            if (email.isNotEmpty() && password.isNotEmpty() && confirmPassword.isNotEmpty()) {
-                                if (password == confirmPassword) {
-                                    signUp(
-                                        email,
-                                        password,
-                                        navController,
-                                        { user ->
-                                            successMessage = "Verification email sent to ${user?.email}"
-                                            isLoading = false
-                                            Toast.makeText(navController.context, successMessage, Toast.LENGTH_LONG).show()
-                                            navController.navigate(Screens.ISTLoginScreen.route) // Navigate to Login screen
-                                        },
-                                        { error ->
-                                            errorMessage = error
-                                            isLoading = false
-                                            Toast.makeText(navController.context, errorMessage, Toast.LENGTH_LONG).show()
-                                        }
-                                    )
-                                } else {
-                                    val error = "Passwords do not match"
-                                    Toast.makeText(navController.context, error, Toast.LENGTH_LONG).show()
-                                    isLoading = false
-                                }
+                            if (isPasswordValid && password == confirmPassword) {
+                                signUp(
+                                    email,
+                                    password,
+                                    navController,
+                                    { user ->
+                                        successMessage = "Verification email sent to ${user?.email}"
+                                        isLoading = false
+                                        Toast.makeText(
+                                            navController.context,
+                                            successMessage,
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                        navController.navigate(Screens.ISTLoginScreen.route) // Navigate to Login screen
+                                    },
+                                    { error ->
+                                        errorMessage = error
+                                        isLoading = false
+                                        Toast.makeText(
+                                            navController.context,
+                                            errorMessage,
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                    }
+                                )
                             } else {
-                                val error = "Please enter email, password, and confirm password"
-                                Toast.makeText(navController.context, error, Toast.LENGTH_LONG).show()
+                                val error = if (!isPasswordValid) {
+                                    "Please ensure the password meets all requirements."
+                                } else {
+                                    "Passwords do not match."
+                                }
+                                Toast.makeText(navController.context, error, Toast.LENGTH_LONG)
+                                    .show()
                                 isLoading = false
                             }
                         },
-                        modifier = Modifier.fillMaxWidth()
+                        enabled = isPasswordValid,
                     ) {
                         Text("Register")
                     }
@@ -229,8 +285,10 @@ fun ISTRegisterScreen(navController: NavController) {
                 }
             }
         }
+        }
     }
 }
+
 
 private fun signUp(
     email: String,

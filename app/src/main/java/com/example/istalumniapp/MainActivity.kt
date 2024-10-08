@@ -57,7 +57,7 @@ class MainActivity : ComponentActivity() {
             ISTALUMNIAPPTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.onPrimary
+//                    color = MaterialTheme.colorScheme.primary
                 ) {
 //                    notificationViewModel.fetchNotifications()
                     // Initialize the NavController

@@ -26,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.example.istalumniapp.R
@@ -201,7 +202,7 @@ fun AdminDashboardCards(
             item {
                 // Card 1: Alumni Profiles Count
                 DashboardCard(
-                    title = "Alumni Profiles",
+                    title = "View Alumni Profiles",
                     count = alumniCount,
                     icon = Icons.Filled.Group,
                     cardColor = MaterialTheme.colorScheme.primary,
@@ -210,9 +211,20 @@ fun AdminDashboardCards(
                 )
             }
             item {
+                // Card 1: Alumni Profiles Count
+                DashboardCard(
+                    title = "Create Job Opportunities",
+                    count = 20,
+                    icon = Icons.Filled.Group,
+                    cardColor = MaterialTheme.colorScheme.primary,
+                    navController = navController,
+                    route = Screens.AddJobScreen.route
+                )
+            }
+            item {
                 // Card 2: Job Listings Count
                 DashboardCard(
-                    title = "Job Listings",
+                    title = "Job Listings Created",
                     count = jobCount,
                     icon = Icons.Filled.Work,
                     cardColor = MaterialTheme.colorScheme.secondary,
@@ -223,7 +235,7 @@ fun AdminDashboardCards(
             item {
                 // Card 3: Job Applications Count
                 DashboardCard(
-                    title = "Job Applications",
+                    title = "Job Applications Made",
                     count = applicationCount,
                     icon = Icons.AutoMirrored.Filled.Assignment,
                     cardColor = MaterialTheme.colorScheme.tertiary,
@@ -556,122 +568,187 @@ fun DashboardTopBar(
 //        else -> DefaultTopBar(navController = navController, onLogoutClick = onLogoutClick) // If needed, provide a default top bar
     }
 }
-
-
 @Composable
 fun AlumniDashboard(navController: NavController, notificationViewModel: NotificationViewModel) {
-    BottomAppBar(
+    val currentDestination = navController.currentBackStackEntryAsState().value?.destination?.route
+
+    NavigationBar(
         containerColor = MaterialTheme.colorScheme.onPrimary
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceAround,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Home Button with Icon and Text
-            IconButton(onClick = { navController.navigate(Screens.DashboardScreen.route) }) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        Icons.Filled.Home,
-                        contentDescription = "Home",
-                        modifier = Modifier.size(40.dp)
-                    )
-                    Text(text = "Home")
-                }
-            }
+        // Home Button with Icon and Text
+        NavigationBarItem(
+            icon = {
+                Icon(
+                    Icons.Filled.Home,
+                    contentDescription = "Home",
+                    modifier = Modifier.size(40.dp)
+                )
+            },
+            label = { Text(text = "Home") },
+            selected = currentDestination == Screens.DashboardScreen.route,
+            onClick = { navController.navigate(Screens.DashboardScreen.route) },
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = MaterialTheme.colorScheme.onBackground,    // Color when selected
+                unselectedIconColor = Color.Gray,  // Color when not selected
+                selectedTextColor = MaterialTheme.colorScheme.onBackground,    // Text color when selected
+                unselectedTextColor = Color.Gray   // Text color when not selected
+            )
+        )
 
-            // Jobs Button with Icon and Text
-            IconButton(onClick = {
+        // Jobs Button with Icon and Text
+        NavigationBarItem(
+            icon = {
+                Icon(
+                    Icons.Filled.AssignmentTurnedIn,
+                    contentDescription = "Applications",
+                    modifier = Modifier.size(40.dp)
+                )
+            },
+            label = { Text(text = "Applications") },
+            selected = currentDestination?.startsWith(Screens.DisplayApplicationScreen.route) == true,
+            onClick = {
                 val currentUser = FirebaseAuth.getInstance().currentUser
                 currentUser?.let {
                     val userId = it.uid
                     navController.navigate("${Screens.DisplayApplicationScreen.route}/$userId")
                 }
-            }) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        Icons.Filled.WorkOutline, // A better icon for jobs
-                        contentDescription = "Jobs",
-                        modifier = Modifier.size(40.dp)
-                    )
-                    Text(text = "Jobs")
-                }
-            }
+            },
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = MaterialTheme.colorScheme.onBackground,
+                unselectedIconColor = Color.Gray,
+                selectedTextColor = MaterialTheme.colorScheme.onBackground,
+                unselectedTextColor = Color.Gray
+            )
+        )
 
-            // Applications Button with Icon and Text
-            IconButton(onClick = { navController.navigate(Screens.DisplayAlumniJobsScreen.route) }) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        Icons.Filled.AssignmentTurnedIn, // Use a relevant icon for applications
-                        contentDescription = "Applications",
-                        modifier = Modifier.size(40.dp)
-                    )
-                    Text(text = "Applications")
-                }
-            }
-        }
+        // Applications Button with Icon and Text
+        NavigationBarItem(
+            icon = {
+                Icon(
+                    Icons.Filled.Work,
+                    contentDescription = "Jobs",
+                    modifier = Modifier.size(40.dp)
+                )
+            },
+            label = { Text(text = "Jobs") },
+            selected = currentDestination == Screens.DisplayAlumniJobsScreen.route,
+            onClick = { navController.navigate(Screens.DisplayAlumniJobsScreen.route) },
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = MaterialTheme.colorScheme.onBackground,
+                unselectedIconColor = Color.Gray,
+                selectedTextColor = MaterialTheme.colorScheme.onBackground,
+                unselectedTextColor = Color.Gray
+            )
+        )
     }
 }
 
 
 @Composable
 fun AdminDashboard(navController: NavController) {
-    BottomAppBar(
+    val currentDestination = navController.currentBackStackEntryAsState().value?.destination?.route
+
+    NavigationBar(
         containerColor = MaterialTheme.colorScheme.onPrimary
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceAround,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Home Button with Icon and Text
-            IconButton(onClick = { navController.navigate(Screens.DashboardScreen.route) }) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        Icons.Filled.Home,
-                        contentDescription = "Home",
-                        modifier = Modifier.size(40.dp)
-                    )
-                    Text(text = "Home")
-                }
-            }
+        // Home Button with Icon and Text
+        NavigationBarItem(
+            icon = {
+                Icon(
+                    Icons.Filled.Home,
+                    contentDescription = "Home",
+                    modifier = Modifier.size(40.dp)
+                )
+            },
+            label = { Text(text = "Home") },
+            selected = currentDestination == Screens.DashboardScreen.route,
+            onClick = { navController.navigate(Screens.DashboardScreen.route) },
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = MaterialTheme.colorScheme.onBackground,
+                unselectedIconColor = Color.Gray,
+                selectedTextColor = MaterialTheme.colorScheme.onBackground,
+                unselectedTextColor = Color.Gray
+            )
+        )
 
-            // Applications Button with Icon and Text
-            IconButton(onClick = { navController.navigate(Screens.ViewApplicationsScreen.route) }) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.Assignment, // Use an icon that represents tasks
-                        contentDescription = "Applications",
-                        modifier = Modifier.size(40.dp)
-                    )
-                    Text(text = "Applications")
-                }
-            }
+        // Applications Button with Icon and Text
+        NavigationBarItem(
+            icon = {
+                Icon(
+                    Icons.AutoMirrored.Filled.Assignment,
+                    contentDescription = "Applications",
+                    modifier = Modifier.size(40.dp)
+                )
+            },
+            label = { Text(text = "Application") },
+            selected = currentDestination == Screens.ViewApplicationsScreen.route,
+            onClick = { navController.navigate(Screens.ViewApplicationsScreen.route) },
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = MaterialTheme.colorScheme.onBackground,
+                unselectedIconColor = Color.Gray,
+                selectedTextColor = MaterialTheme.colorScheme.onBackground,
+                unselectedTextColor = Color.Gray
+            )
+        )
 
-            // Manage Users Button with Icon and Text
-            IconButton(onClick = { navController.navigate(Screens.ViewAlumniProfilesScreen.route) }) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        Icons.Filled.SupervisedUserCircle, // Use a user management icon
-                        contentDescription = "Manage Users",
-                        modifier = Modifier.size(40.dp)
-                    )
-                    Text(text = "Manage Users")
-                }
-            }
+        // Manage Users Button with Icon and Text
+        NavigationBarItem(
+            icon = {
+                Icon(
+                    Icons.Filled.SupervisedUserCircle,
+                    contentDescription = "Manage Users",
+                    modifier = Modifier.size(40.dp)
+                )
+            },
+            label = { Text(text = "Users") },
+            selected = currentDestination == Screens.ViewAlumniProfilesScreen.route,
+            onClick = { navController.navigate(Screens.ViewAlumniProfilesScreen.route) },
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = MaterialTheme.colorScheme.onBackground,
+                unselectedIconColor = Color.Gray,
+                selectedTextColor = MaterialTheme.colorScheme.onBackground,
+                unselectedTextColor = Color.Gray
+            )
+        )
 
-            // Jobs Button with Icon and Text
-            IconButton(onClick = { navController.navigate(Screens.DisplayJobScreen.route) }) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        Icons.Filled.Work, // Use a relevant icon for jobs
-                        contentDescription = "Jobs",
-                        modifier = Modifier.size(40.dp)
-                    )
-                    Text(text = "Jobs")
-                }
-            }
-        }
+        NavigationBarItem(
+            icon = {
+                Icon(
+                    Icons.Filled.AddToPhotos,
+                    contentDescription = "Create Job",
+                    modifier = Modifier.size(40.dp)
+                )
+            },
+            label = { Text(text = "Create Job") },
+            selected = currentDestination == Screens.AddJobScreen.route,
+            onClick = { navController.navigate(Screens.AddJobScreen.route) },
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = MaterialTheme.colorScheme.onBackground,
+                unselectedIconColor = Color.Gray,
+                selectedTextColor = MaterialTheme.colorScheme.onBackground,
+                unselectedTextColor = Color.Gray
+            )
+        )
+
+        // Jobs Button with Icon and Text
+        NavigationBarItem(
+            icon = {
+                Icon(
+                    Icons.Filled.Work,
+                    contentDescription = "Jobs",
+                    modifier = Modifier.size(40.dp)
+                )
+            },
+            label = { Text(text = "Jobs") },
+            selected = currentDestination == Screens.DisplayJobScreen.route,
+            onClick = { navController.navigate(Screens.DisplayJobScreen.route) },
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = MaterialTheme.colorScheme.onBackground,
+                unselectedIconColor = Color.Gray,
+                selectedTextColor = MaterialTheme.colorScheme.onBackground,
+                unselectedTextColor = Color.Gray
+            )
+        )
     }
 }
 

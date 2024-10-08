@@ -23,6 +23,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -91,7 +92,7 @@ fun ViewProfileScreen(navController: NavController, profileViewModel: ProfileVie
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = "Back",
-                tint = MaterialTheme.colorScheme.onBackground
+                tint = MaterialTheme.colorScheme.inverseSurface
             )
         }
 
@@ -123,6 +124,7 @@ fun ViewProfileScreen(navController: NavController, profileViewModel: ProfileVie
                         )
                     }
                 }
+
                 errorMessage.value != null -> {
                     // Show error message
                     Text(
@@ -132,6 +134,7 @@ fun ViewProfileScreen(navController: NavController, profileViewModel: ProfileVie
                         modifier = Modifier.padding(16.dp)
                     )
                 }
+
                 isProfileLoaded.value && profileData.value == null -> {
                     // Show "No profile data available" only after loading is complete
                     Text(
@@ -141,15 +144,13 @@ fun ViewProfileScreen(navController: NavController, profileViewModel: ProfileVie
                         modifier = Modifier.padding(16.dp)
                     )
                 }
+
                 else -> {
-
-
-
 
 
                     // Show the profile details
                     profileData.value?.let { profile ->
-                        ProfileDetails(profile, profilePhotoUrl.value,navController)
+                        ProfileDetails(profile, profilePhotoUrl.value, navController)
                     }
                 }
             }
@@ -159,7 +160,11 @@ fun ViewProfileScreen(navController: NavController, profileViewModel: ProfileVie
 
 
 @Composable
-fun ProfileDetails(profile: AlumniProfileData, profilePhotoUrl: String?, navController: NavController) {
+fun ProfileDetails(
+    profile: AlumniProfileData,
+    profilePhotoUrl: String?,
+    navController: NavController
+) {
     var isLoading by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
@@ -183,17 +188,20 @@ fun ProfileDetails(profile: AlumniProfileData, profilePhotoUrl: String?, navCont
             Column(horizontalAlignment = Alignment.End) {
                 Text(
                     text = profile.fullName,
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.padding(top = 8.dp)
                 )
+                Row {
+                    Icon(imageVector = Icons.Default.LocationOn, contentDescription = "Location")
+                    Text(
+                        text = profile.location,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color.Gray,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
 
-                Text(
-                    text = profile.location,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -221,9 +229,15 @@ fun ProfileDetails(profile: AlumniProfileData, profilePhotoUrl: String?, navCont
             horizontalArrangement = Arrangement.Center,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Button(onClick = {
-                navController.navigate(Screens.EditProfileScreen.route)
-            }) {
+            Button(colors = ButtonColors(
+                containerColor = Color.DarkGray,
+                contentColor = Color.White,
+                disabledContainerColor = Color.DarkGray,
+                disabledContentColor = Color.DarkGray
+            ),
+                onClick = {
+                    navController.navigate(Screens.EditProfileScreen.route)
+                }) {
                 Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit Profile")
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Edit Profile")
@@ -231,7 +245,14 @@ fun ProfileDetails(profile: AlumniProfileData, profilePhotoUrl: String?, navCont
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            Button(onClick = { /* Handle Add Section */ }) {
+            Button(
+                colors = ButtonColors(
+                    containerColor = Color.DarkGray,
+                    contentColor = Color.White,
+                    disabledContainerColor = Color.DarkGray,
+                    disabledContentColor = Color.DarkGray,
+                ),
+                onClick = {}) {
                 Icon(imageVector = Icons.Default.Add, contentDescription = "Add Section")
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Add Section")
@@ -268,7 +289,7 @@ fun SectionHeader(title: String) {
         text = title,
         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
         modifier = Modifier.padding(vertical = 8.dp),
-        color = MaterialTheme.colorScheme.onBackground
+        color = MaterialTheme.colorScheme.inverseSurface
     )
 }
 
@@ -345,14 +366,14 @@ fun SkillsSection(skills: List<String>) {
     if (skills.isNotEmpty()) {
         Text(
             text = skills.joinToString(", "),
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.padding(bottom = 4.dp),
-            color = Color.White
+            color = MaterialTheme.colorScheme.onTertiaryContainer
         )
     } else {
         Text(
             text = "No skills listed.",
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.headlineMedium,
             color = Color.Gray
         )
     }
@@ -365,25 +386,25 @@ fun InfoRow(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.padding(vertical = 8.dp)
     ) {
-        Icon(icon, contentDescription = label, tint = Color.Gray, modifier = Modifier.size(20.dp))
+        Icon(icon, contentDescription = label, tint = Color.Gray, modifier = Modifier.size(30.dp))
         Spacer(modifier = Modifier.width(8.dp))
         Column {
             Text(
                 text = label,
-                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                color = Color.Gray
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                color = Color.LightGray
             )
             Text(
                 text = value,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onTertiaryContainer
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.inverseSurface
             )
         }
     }
 }
 
 @Composable
-fun ProfileImage(profileUrl: String,modifier: Modifier = Modifier) {
+fun ProfileImage(profileUrl: String, modifier: Modifier = Modifier) {
     // Load profile image with Coil, and handle empty URL case efficiently
     val painter = rememberAsyncImagePainter(
         ImageRequest.Builder(LocalContext.current)

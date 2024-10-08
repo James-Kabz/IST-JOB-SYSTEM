@@ -8,12 +8,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
@@ -26,6 +28,7 @@ import com.example.istalumniapp.utils.ProfileViewModel
 import com.example.istalumniapp.utils.SharedViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -46,6 +49,7 @@ fun NotificationScreen(
     var showLogoutConfirmation by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(true) } // Track loading state
     val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
 
     // Fetch user role and profile photo
     LaunchedEffect(Unit) {
@@ -147,6 +151,18 @@ fun NotificationScreen(
                             notification = notification,
                             onNotificationClick = {
                                 notificationViewModel.markNotificationAsRead(notification.id)
+                            },
+                            onDeleteClick = {
+                                // Call deleteNotification when the delete icon is clicked
+                                notificationViewModel.deleteNotification(notification.id) { success ->
+                                    coroutineScope.launch {
+                                        if (success) {
+                                            snackbarHostState.showSnackbar("Notification deleted successfully")
+                                        } else {
+                                            snackbarHostState.showSnackbar("Failed to delete notification")
+                                        }
+                                    }
+                                }
                             }
                         )
                         Spacer(modifier = Modifier.height(8.dp))
@@ -162,7 +178,8 @@ fun NotificationScreen(
 @Composable
 fun NotificationItemUI(
     notification: NotificationData,
-    onNotificationClick: () -> Unit
+    onNotificationClick: () -> Unit,
+    onDeleteClick: () -> Unit // Add this callback for delete
 ) {
     Card(
         modifier = Modifier
@@ -180,7 +197,7 @@ fun NotificationItemUI(
         ) {
             // Notification bell icon
             Icon(
-                Icons.Default.Notifications, // You can use Icons.Filled.Notifications
+                Icons.Default.Notifications,
                 contentDescription = "Notification Bell",
                 modifier = Modifier.size(40.dp),
                 tint = MaterialTheme.colorScheme.primary
@@ -193,7 +210,7 @@ fun NotificationItemUI(
             ) {
                 // Title from NotificationData
                 Text(
-                    text = notification.title,  // Dynamic title from Firestore
+                    text = notification.title,
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -202,7 +219,7 @@ fun NotificationItemUI(
 
                 // Message from NotificationData
                 Text(
-                    text = notification.message,  // Dynamic message from Firestore
+                    text = notification.message,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -212,31 +229,46 @@ fun NotificationItemUI(
                 // Timestamp with clock icon
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        imageVector = Icons.Default.AccessTime, // Clock icon
+                        imageVector = Icons.Default.AccessTime,
                         contentDescription = "Time",
                         modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = formatTimestamp(notification.timestamp.toLong()), // Convert to string
+                        text = formatTimestamp(notification.timestamp.toLong()),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
 
-            // Blue dot if unread
-            if (!notification.read) {
-                Box(
-                    modifier = Modifier
-                        .size(10.dp)
-                        .background(MaterialTheme.colorScheme.primary, shape = CircleShape)
-                )
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                // Blue dot if unread
+                if (!notification.read) {
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .background(MaterialTheme.colorScheme.primary, shape = CircleShape)
+                    )
+                }
+
+                // Add a delete button with a trash icon
+                IconButton(
+                    onClick = { onDeleteClick() } // Trigger delete action
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Delete Notification",
+                        tint = Color.Red
+                    )
+                }
             }
+
         }
     }
 }
+
 
 
 // Convert Long timestamp to formatted String
