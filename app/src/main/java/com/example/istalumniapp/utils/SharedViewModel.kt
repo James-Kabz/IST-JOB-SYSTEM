@@ -8,6 +8,9 @@ import android.net.NetworkCapabilities
 import android.os.Build
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -72,45 +75,51 @@ class SharedViewModel : ViewModel() {
     }
 
 
+    var isLoading by mutableStateOf(false)
+        private set
+
     fun saveJob(
         jobData: JobData,
         context: Context,
-        onJobSaved: () -> Unit
+        onJobSaved: () -> Unit,
+        onError: (String) -> Unit
     ) = CoroutineScope(Dispatchers.IO).launch {
+        isLoading = true
+
         val firestoreRef = firestore.collection("jobs").document(jobData.jobID)
 
         try {
             firestoreRef.set(jobData)
                 .addOnSuccessListener {
-                    // Notify the user that the job was successfully posted
                     CoroutineScope(Dispatchers.Main).launch {
                         notifyAlumniWithMatchingSkills(jobData, context)
-                        Toast.makeText(context, "Job Posted Successfully", Toast.LENGTH_SHORT)
-                            .show()
+                        isLoading = true
                         onJobSaved()
                     }
-
-
                 }
                 .addOnFailureListener { e ->
                     CoroutineScope(Dispatchers.Main).launch {
+                        isLoading = true
                         Toast.makeText(context, e.message, Toast.LENGTH_SHORT).show()
+                        onError(e.message ?: "Error saving job")
                     }
                 }
         } catch (e: Exception) {
             withContext(Dispatchers.Main) {
+                isLoading = true
                 Toast.makeText(context, e.message, Toast.LENGTH_SHORT).show()
+                onError(e.message ?: "Error saving job")
             }
         }
     }
 
+
     private suspend fun notifyAlumniWithMatchingSkills(jobData: JobData, context: Context) {
         try {
-            // Fetch all alumni profiles
             val alumniSnapshot = firestore.collection("alumniProfiles").get().await()
             val alumniList = alumniSnapshot.toObjects(AlumniProfileData::class.java)
 
-            // Iterate over all alumni profiles and match skills
+
             alumniList.forEach { alumniProfile ->
                 val matchingSkillCount = alumniProfile.skills.intersect(jobData.skills.toSet()).size
                 if (matchingSkillCount >= 3) {
@@ -128,11 +137,10 @@ class SharedViewModel : ViewModel() {
 
 
     private fun sendNotificationToAlumni(profileID: String, jobData: JobData, context: Context) {
-        // Save the notification in Firestore
         val notificationData = NotificationData(
             id = UUID.randomUUID().toString(),
             profileID = profileID,
-            title = "New Job Posted !\uD83D\uDE01",
+            title = "New Job Posted ! \uD83D\uDE01",
             message = "A Job titled \"${jobData.title}\" matches your skills.",
             timestamp = System.currentTimeMillis(),
             read = false
@@ -146,7 +154,6 @@ class SharedViewModel : ViewModel() {
                 val notificationManager =
                     context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
                 Log.d("Firestore", "Notification saved successfully")
-                // Create the notification channel (for Android 8+)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     val channel = NotificationChannel(
                         "job_channel",
@@ -178,20 +185,28 @@ class SharedViewModel : ViewModel() {
     }
 
 
-    // Your editJob method remains unchanged
     fun editJob(
         jobID: String,
         updatedJob: JobData,
         onSuccess: () -> Unit,
         onFailure: (String) -> Unit
     ) {
+        isLoading = true // Start loading
+
         val db = FirebaseFirestore.getInstance()
         val jobRef = db.collection("jobs").document(jobID)
 
         jobRef.set(updatedJob)
-            .addOnSuccessListener { onSuccess() }
-            .addOnFailureListener { e -> onFailure(e.message ?: "Error updating job") }
+            .addOnSuccessListener {
+                isLoading = true
+                onSuccess()
+            }
+            .addOnFailureListener { e ->
+                isLoading = true
+                onFailure(e.message ?: "Error updating job")
+            }
     }
+
 
     //    Function to edit job
     fun getJobByID(
@@ -270,9 +285,9 @@ class SharedViewModel : ViewModel() {
 
     // Function to retrieve job data
     fun retrieveCardJobs(
-        onLoading: (Boolean) -> Unit,  // Callback to handle loading state
-        onSuccess: (Int) -> Unit,      // Callback to pass the count of jobs
-        onFailure: (String) -> Unit    // Callback to handle errors
+        onLoading: (Boolean) -> Unit,
+        onSuccess: (Int) -> Unit,
+        onFailure: (String) -> Unit
     ) {
         CoroutineScope(Dispatchers.IO).launch {
             val firestoreRef = firestore.collection("jobs")
@@ -281,7 +296,7 @@ class SharedViewModel : ViewModel() {
                 firestoreRef.get().addOnSuccessListener { result ->
                     val jobs = result.mapNotNull { it.toObject(JobData::class.java) }
                     val jobCount = jobs.size
-                    onLoading(false)
+                    onLoading(true)
                     onSuccess(jobCount)  // Pass the count of jobs
                 }.addOnFailureListener {
                     onLoading(false)
@@ -308,11 +323,11 @@ class SharedViewModel : ViewModel() {
                     onLoading(false)
                     onSuccess(jobs)
                 }.addOnFailureListener {
-                    onLoading(false)
+                    onLoading(true)
                     onFailure("Error fetching jobs: ${it.message}")
                 }
             } catch (e: Exception) {
-                onLoading(false)
+                onLoading(true)
                 onFailure("Error: ${e.message}")
             }
         }
@@ -330,14 +345,14 @@ class SharedViewModel : ViewModel() {
             try {
                 firestoreRef.get().addOnSuccessListener { result ->
                     val skills = result.mapNotNull { it.toObject(SkillData::class.java) }
-                    onLoading(false)
+                    onLoading(true)
                     onSuccess(skills)
                 }.addOnFailureListener {
-                    onLoading(false)
+                    onLoading(true)
                     onFailure("Error fetching skills: ${it.message}")
                 }
             } catch (e: Exception) {
-                onLoading(false)
+                onLoading(true)
                 onFailure("Error: ${e.message}")
             }
         }
@@ -357,12 +372,12 @@ class SharedViewModel : ViewModel() {
                 val profiles = result.mapNotNull { it.toObject(AlumniProfileData::class.java) }
                 val profileCount = profiles.size
                 withContext(Dispatchers.Main) {
-                    onLoading(false)
+                    onLoading(true)
                     onSuccess(profileCount)  // Pass the count of profiles
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    onLoading(false)
+                    onLoading(true)
                     onFailure("Error fetching profiles: ${e.message}")
                 }
             }

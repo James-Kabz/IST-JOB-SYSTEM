@@ -274,20 +274,7 @@ fun DisplayApplicationScreen(
                                             else -> Color.Gray
                                         }
                                     )
-                                    if (!application.feedback.isNullOrEmpty()) {
-                                        Text(
-                                            "Feedback: ${application.feedback}",
-                                            style = MaterialTheme.typography.bodyLarge
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Spacer(modifier = Modifier.width(8.dp))
-
+                                    if (application.status == "Approved") {
                                         IconButton(onClick = {
                                             applicationToDelete = application
                                             showDeleteConfirmation = true
@@ -298,6 +285,13 @@ fun DisplayApplicationScreen(
                                                 tint = Color.Red
                                             )
                                         }
+                                    }
+
+                                    if (!application.feedback.isNullOrEmpty()) {
+                                        Text(
+                                            "Feedback: ${application.feedback}",
+                                            style = MaterialTheme.typography.bodyLarge
+                                        )
                                     }
                                 }
                             }

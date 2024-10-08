@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -56,6 +57,7 @@ fun ISTRegisterScreen(navController: NavController) {
     val containsUppercase = password.any { it.isUpperCase() }
     val containsDigit = password.any { it.isDigit() }
     val containsSpecialChar = password.any { !it.isLetterOrDigit() }
+    val context = LocalContext.current
 
     // Password is valid if all conditions are met
     isPasswordValid = isPasswordLengthValid && containsUppercase && containsDigit && containsSpecialChar
@@ -86,7 +88,7 @@ fun ISTRegisterScreen(navController: NavController) {
             Column(
                 modifier = Modifier.fillMaxHeight()
                     .padding(top = 25.dp)
-
+                    .padding(20.dp)
             ) {
                 IconButton(onClick = { navController.navigate(Screens.ISTPreviewScreen.route) }) {
                     Icon(
@@ -99,7 +101,7 @@ fun ISTRegisterScreen(navController: NavController) {
                 Image(
                     modifier = Modifier
                         .align(Alignment.CenterHorizontally)
-                        .size(250.dp),
+                        .size(150.dp),
                     painter = painterResource(R.drawable.ist_logo),
                     contentDescription = "App Logo"
                 )
@@ -231,12 +233,11 @@ fun ISTRegisterScreen(navController: NavController) {
                                     { user ->
                                         successMessage = "Verification email sent to ${user?.email}"
                                         isLoading = false
-                                        Toast.makeText(
-                                            navController.context,
-                                            successMessage,
-                                            Toast.LENGTH_LONG
-                                        ).show()
-                                        navController.navigate(Screens.ISTLoginScreen.route) // Navigate to Login screen
+                                        navController.navigate(Screens.ISTLoginScreen.route)
+                                        {
+                                            Toast.makeText(context, "Profile Created successfully", Toast.LENGTH_SHORT).show()
+
+                                        }// Navigate to Login screen
                                     },
                                     { error ->
                                         errorMessage = error

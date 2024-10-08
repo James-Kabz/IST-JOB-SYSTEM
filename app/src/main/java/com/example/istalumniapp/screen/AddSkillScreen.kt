@@ -26,7 +26,10 @@ fun AddSkillScreen(navController: NavController, sharedViewModel: SharedViewMode
                 title = { Text("Add Skill") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "back_button")
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "back_button"
+                        )
                     }
                 }
             )

@@ -8,9 +8,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
@@ -58,6 +60,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import com.example.istalumniapp.R
+import com.example.istalumniapp.nav.Screens
 import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
@@ -85,7 +88,8 @@ fun AddJobScreen(navController: NavController, sharedViewModel: SharedViewModel)
 
     // Deadline date state
     var deadlineDate by remember { mutableStateOf<Date?>(null) }
-    val deadlineDateFormatted = deadlineDate?.let { DateFormat.getDateInstance().format(it) } ?: "Select Deadline Date"
+    val deadlineDateFormatted =
+        deadlineDate?.let { DateFormat.getDateInstance().format(it) } ?: "Select Deadline Date"
 
     val calendar = Calendar.getInstance()
     val year = calendar.get(Calendar.YEAR)
@@ -127,7 +131,10 @@ fun AddJobScreen(navController: NavController, sharedViewModel: SharedViewModel)
                 horizontalArrangement = Arrangement.Start
             ) {
                 IconButton(onClick = { navController.popBackStack() }) {
-                    Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "back_button")
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "back_button"
+                    )
                 }
             }
 
@@ -138,7 +145,10 @@ fun AddJobScreen(navController: NavController, sharedViewModel: SharedViewModel)
                     .padding(vertical = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(text = "Step $currentStep of $totalSteps", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    text = "Step $currentStep of $totalSteps",
+                    style = MaterialTheme.typography.bodyLarge
+                )
                 LinearProgressIndicator(
                     progress = { progress },
                     modifier = Modifier
@@ -185,6 +195,7 @@ fun AddJobScreen(navController: NavController, sharedViewModel: SharedViewModel)
                         }
                     }
                 )
+
                 2 -> StepTwo(
                     location = location,
                     onLocationChange = { location = it },
@@ -200,6 +211,7 @@ fun AddJobScreen(navController: NavController, sharedViewModel: SharedViewModel)
                         }
                     }
                 )
+
                 3 -> StepThree(
                     companyName = companyName,
                     onCompanyNameChange = { companyName = it },
@@ -219,6 +231,7 @@ fun AddJobScreen(navController: NavController, sharedViewModel: SharedViewModel)
                         }
                     }
                 )
+
                 4 -> StepFour(
                     experienceLevel = experienceLevel,
                     onExperienceLevelChange = { experienceLevel = it },
@@ -234,6 +247,7 @@ fun AddJobScreen(navController: NavController, sharedViewModel: SharedViewModel)
                         }
                     }
                 )
+
                 5 -> {
                     StepFive(
                         selectedSkills = selectedSkills,
@@ -245,7 +259,7 @@ fun AddJobScreen(navController: NavController, sharedViewModel: SharedViewModel)
                         onDeadlineDateClick = { datePickerDialog.show() },
                         onExpandedChange = { skillsExpanded = it },
                         onPrevious = { currentStep = 4 },
-                        sharedViewModel =  sharedViewModel,
+                        sharedViewModel = sharedViewModel,
                         onSubmit = {
                             if (selectedSkills.isEmpty()) {
                                 errorMessage = "Please select at least one skill."
@@ -269,9 +283,17 @@ fun AddJobScreen(navController: NavController, sharedViewModel: SharedViewModel)
                                 sharedViewModel.saveJob(
                                     jobData = jobData,
                                     context = context,
-                                    onJobSaved = { Unit })
+                                    onJobSaved = { Unit },
+                                    onError = { errorMessage = it }
+                                )
                                 isSubmitting = false
-                                navController.popBackStack() // Go back after submitting
+                                navController.navigate(Screens.DisplayJobScreen.route) {
+                                    Toast.makeText(
+                                        context,
+                                        "Job Posted successfully",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
                             }
                         }
                     )
@@ -282,7 +304,6 @@ fun AddJobScreen(navController: NavController, sharedViewModel: SharedViewModel)
         }
     }
 }
-
 
 
 @Composable
@@ -390,7 +411,7 @@ fun StepTwo(
             label = { Text(text = "Salary") },
             isError = salary.isBlank(),
             keyboardOptions = KeyboardOptions.Default.copy(
-                keyboardType = KeyboardType.Text,
+                keyboardType = KeyboardType.Number,
                 imeAction = ImeAction.Done
             ),
         )
@@ -452,9 +473,11 @@ fun StepThree(
             ),
         )
         // Job Type Dropdown
-        Column(modifier = Modifier
-            .fillMaxWidth()
-            .padding(20.dp)) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp)
+        ) {
             Text(text = "Job Type")
             Button(
                 onClick = { onExpandedChange(true) },
@@ -583,12 +606,16 @@ fun StepFive(
     onExpandedChange: (Boolean) -> Unit,
     onPrevious: () -> Unit,
     onSubmit: () -> Unit,
-    sharedViewModel: SharedViewModel // Add this parameter to access ViewModel
+    sharedViewModel: SharedViewModel
 ) {
     val context = LocalContext.current
     Column(
         modifier = Modifier
-            .padding(start = 60.dp, end = 60.dp, bottom = 400.dp)
+            .padding(
+                start = 60.dp,
+                end = 60.dp,
+                bottom = 100.dp
+            )  // Adjusted bottom padding for better layout
             .fillMaxHeight(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
@@ -622,34 +649,47 @@ fun StepFive(
         // Skill Selection
         SkilledSelection(
             selectedSkills = selectedSkills,
-            onSkillSelected = onSkillSelected,     // Pass the function for selecting a skill
-            onSkillDeselected = onSkillDeselected, // Pass the function for deselecting a skill
-            skills = skills,                       // Pass the list of available skills
-            expanded = expanded,                   // Pass the expanded state
-            onExpandedChange = onExpandedChange,   // Callback to change expanded state
-            saveSkill = { skillData -> sharedViewModel.saveSkill(skillData, context = context) } // Use sharedViewModel's saveSkill
+            onSkillSelected = onSkillSelected,
+            onSkillDeselected = onSkillDeselected,
+            skills = skills,
+            expanded = expanded,
+            onExpandedChange = onExpandedChange,
+            saveSkill = { skillData ->
+                sharedViewModel.saveSkill(
+                    skillData,
+                    context = context
+                )
+            }
         )
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         // Navigation Buttons
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Button(onClick = onPrevious) {
+            Button(
+                onClick = onPrevious,
+                modifier = Modifier
+                    .weight(25f)
+                    .height(40.dp)
+            ) {
                 Text(text = "Previous")
             }
-            Button(onClick = onSubmit) {
+            Button(
+                onClick = onSubmit,
+                modifier = Modifier
+                    .weight(25f)
+                    .height(40.dp)
+            ) {
                 Text(text = "Submit")
             }
         }
     }
 }
-
-
-
-
 
 @Composable
 fun SkilledSelection(
@@ -708,7 +748,8 @@ fun SkilledSelection(
                 onClick = {
                     if (newSkill.isNotBlank()) {
                         // Check if skill exists in the list
-                        val skillExists = skills.any { it.skillName.equals(newSkill, ignoreCase = true) }
+                        val skillExists =
+                            skills.any { it.skillName.equals(newSkill, ignoreCase = true) }
 
                         if (!skillExists && !selectedSkills.contains(newSkill)) {
                             // Save skill to Firebase Firestore
@@ -723,14 +764,23 @@ fun SkilledSelection(
                                     // Skill successfully added to Firestore
                                     onSkillSelected(newSkill) // Add the new skill locally
                                     newSkill = "" // Reset the input field
-                                    Toast.makeText(context, "Skill added successfully", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(
+                                        context,
+                                        "Skill added successfully",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                 }
                                 .addOnFailureListener { e ->
                                     // Handle Firestore error
-                                    Toast.makeText(context, "Failed to add skill: ${e.message}", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(
+                                        context,
+                                        "Failed to add skill: ${e.message}",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                 }
                         } else {
-                            Toast.makeText(context, "Skill already exists", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Skill already exists", Toast.LENGTH_SHORT)
+                                .show()
                         }
                     }
                     onExpandedChange(false) // Close the dropdown menu

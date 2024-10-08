@@ -157,6 +157,20 @@ fun DisplayJobScreen(
                         modifier = Modifier.weight(1f), // This ensures that LazyColumn only takes available space
                         verticalArrangement = Arrangement.Top
                     ) {
+                        if (userRole == "admin") {
+                            Row(
+                                horizontalArrangement = Arrangement.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                IconButton(
+                                    modifier = Modifier.size(25.dp),
+                                    onClick = { navController.navigate(Screens.AddJobScreen.route) }) {
+                                    Icon(Icons.Default.AddToPhotos, contentDescription = "Profile")
+                                }
+                                Text(text = "Add Job")
+
+                            }
+                        }
 
                         // Job List or Error Message
                         when {
@@ -373,7 +387,7 @@ fun JobItem(
             text = "Description :",
             style = MaterialTheme.typography.headlineMedium.copy(
                 fontWeight = FontWeight.ExtraBold,
-                )
+            )
         )
 
 

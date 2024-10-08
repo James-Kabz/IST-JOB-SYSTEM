@@ -14,6 +14,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -25,6 +26,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.istalumniapp.nav.Screens
 import com.example.istalumniapp.utils.*
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuth.*
@@ -36,7 +38,8 @@ fun JobApplicationScreen(
     jobApplicationModel: JobApplicationModel
 ) {
     val context = LocalContext.current
-    val userId = getInstance().currentUser?.uid ?: ""  // Get the userID from Firebase Authentication
+    val userId =
+        getInstance().currentUser?.uid ?: ""  // Get the userID from Firebase Authentication
     val backgroundColor = MaterialTheme.colorScheme.background
 
     // UI State
@@ -63,8 +66,17 @@ fun JobApplicationScreen(
             .padding(16.dp)
     ) {
         if (isLoading) {
-            // Show a progress indicator while loading
-            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            CircularProgressIndicator(
+                modifier = Modifier.align(Alignment.Center),
+                color = colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(30.dp))
+            Text(
+                modifier = Modifier.align(Alignment.Center),
+                text = "Submitting Application...",
+                color = colorScheme.onBackground,
+                style = MaterialTheme.typography.bodyMedium
+            )
         } else {
             Column(
                 modifier = Modifier
@@ -112,7 +124,7 @@ fun JobApplicationScreen(
                         expanded = expandedGender,
                         onDismissRequest = { expandedGender = false }
                     ) {
-                        Gender.values().forEach { g ->
+                        Gender.entries.forEach { g ->
                             DropdownMenuItem(onClick = {
                                 gender = g
                                 expandedGender = false
@@ -210,9 +222,16 @@ fun JobApplicationScreen(
                                     "Application submitted successfully",
                                     Toast.LENGTH_SHORT
                                 ).show()
-                                navController.popBackStack()  // Go back to the previous screen
+                                navController.navigate("${Screens.DisplayApplicationScreen.route}/{userId}") {
+                                    Toast.makeText(
+                                        context,
+                                        "Application submitted successfully",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }// Go back to the previous screen
                             } else {
-                                Toast.makeText(context, "Error: $message", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Error: $message", Toast.LENGTH_SHORT)
+                                    .show()
                             }
                         }
                     },

@@ -19,6 +19,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.istalumniapp.nav.Screens
 import com.example.istalumniapp.utils.JobData
 import com.example.istalumniapp.utils.JobType
 import com.example.istalumniapp.utils.SharedViewModel
@@ -80,6 +81,7 @@ fun EditJobScreen(
         }
     }
 }
+
 @Composable
 fun JobEditForm(
     jobData: JobData,
@@ -187,7 +189,9 @@ fun JobEditForm(
             // Skills Selection
             SkillsSelectionField(
                 selectedSkills = selectedSkills,
-                onSkillsSelected = { newSkills -> selectedSkills = newSkills }, // Update selected skills
+                onSkillsSelected = { newSkills ->
+                    selectedSkills = newSkills
+                }, // Update selected skills
                 saveSkill = { skill ->
                     sharedViewModel.saveSkill(skill, context) // Save skill via ViewModel
                 },
@@ -265,11 +269,21 @@ fun JobEditForm(
                         updatedJob = updatedJob,
                         onSuccess = {
                             isUpdating = false
-                            navController.popBackStack()
+                            navController.navigate(Screens.DisplayJobScreen.route) {
+                                Toast.makeText(
+                                    context,
+                                    "Profile Updated successfully",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
                         },
                         onFailure = { error ->
                             isUpdating = false
-                            Toast.makeText(context, "Failed to update job: $error", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                context,
+                                "Failed to update job: $error",
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     )
                 },
@@ -296,7 +310,6 @@ fun JobEditForm(
         }
     }
 }
-
 
 
 @Composable
@@ -369,13 +382,20 @@ fun SkillsSelectionField(
                     onClick = {
                         if (newSkill.isNotBlank()) {
                             // Check if the skill already exists
-                            val skillExists = allAvailableSkills.any { it.skillName.equals(newSkill, ignoreCase = true) }
+                            val skillExists = allAvailableSkills.any {
+                                it.skillName.equals(
+                                    newSkill,
+                                    ignoreCase = true
+                                )
+                            }
                             if (!skillExists && !selectedSkills.contains(newSkill)) {
                                 // Generate a unique ID for the new skill
-                                val newSkillID = UUID.randomUUID().toString() // Generate a unique skill ID
+                                val newSkillID =
+                                    UUID.randomUUID().toString() // Generate a unique skill ID
 
                                 // Create new SkillData with skillID and skillName
-                                val skillData = SkillData(skillID = newSkillID, skillName = newSkill)
+                                val skillData =
+                                    SkillData(skillID = newSkillID, skillName = newSkill)
 
                                 // Save new skill to Firebase
                                 saveSkill(skillData)
@@ -386,7 +406,8 @@ fun SkillsSelectionField(
                                 // Reset input field
                                 newSkill = ""
                             } else {
-                                Toast.makeText(context, "Skill already exists", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Skill already exists", Toast.LENGTH_SHORT)
+                                    .show()
                             }
                         }
                         expanded = false
@@ -397,7 +418,6 @@ fun SkillsSelectionField(
         }
     }
 }
-
 
 
 @Composable
