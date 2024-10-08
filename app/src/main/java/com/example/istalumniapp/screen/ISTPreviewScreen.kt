@@ -42,7 +42,7 @@ fun ISTPreviewScreen(navController: NavController) {
             .background(MaterialTheme.colorScheme.background)
     ) {
         // Image as background
-        
+
         Image(
             painter = painterResource(id = R.drawable.preview_screen2),
             contentDescription = "Background Image",
@@ -67,27 +67,29 @@ fun ISTPreviewScreen(navController: NavController) {
             Text(
                 text = "Welcome to IST Alumni App",
                 color = Color.White,
-                style = MaterialTheme.typography.headlineMedium,
+                style = MaterialTheme.typography.headlineSmall,
 //                fontSize = 20.sp
             )
             Text(
                 text = "Dive in to find your dream job",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 style = MaterialTheme.typography.headlineSmall,
-                )
-            Button(colors = ButtonColors(
-                containerColor = Color.Red,
-                contentColor = Color.White,
-                disabledContainerColor = Color.DarkGray,
-                disabledContentColor = Color.DarkGray
-            ),
-                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
+            Button(
+                colors = ButtonColors(
+                    containerColor = Color.Red,
+                    contentColor = Color.White,
+                    disabledContainerColor = Color.DarkGray,
+                    disabledContentColor = Color.DarkGray
+                ),
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
                     .width(250.dp),
                 onClick = {
                     navController.navigate(Screens.ISTLoginScreen.route)
                 },
 
-            ) {
+                ) {
                 Text(text = "Login")
             }
 
@@ -105,7 +107,8 @@ fun ISTPreviewScreen(navController: NavController) {
                     disabledContainerColor = Color.DarkGray,
                     disabledContentColor = Color.DarkGray
                 ),
-                modifier = Modifier.align(Alignment.CenterHorizontally)
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
                     .width(250.dp),
                 onClick = {
                     navController.navigate(Screens.ISTRegisterScreen.route)

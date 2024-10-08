@@ -20,6 +20,7 @@ import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,7 +48,7 @@ fun DisplayAlumniJobsScreen(
     notificationViewModel: NotificationViewModel
 ) {
     var matchedJobs by remember { mutableStateOf<List<JobData>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }  // Initialize as true
+    val loading by profileViewModel.loading.collectAsState()
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var profilePhotoUrl by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
@@ -57,11 +58,9 @@ fun DisplayAlumniJobsScreen(
 
     // Fetch matched jobs based on alumni skills
     LaunchedEffect(Unit) {
-        isLoading = true  // Start loading
         profileViewModel.fetchMatchingJobs(context = context)
         profileViewModel.matchedJobs.collect { jobs ->
             matchedJobs = jobs
-            isLoading = false  // Set loading to false when data is fetched
         }
     }
 
@@ -75,7 +74,7 @@ fun DisplayAlumniJobsScreen(
 
         // Fetch profile photo
         profileViewModel.retrieveProfilePhoto(
-            onLoading = { isLoading = it },  // Update loading state
+            onLoading = {  },  // Update loading state
             onSuccess = { url -> profilePhotoUrl = url },
             onFailure = { message ->
                 Log.e("DisplayJobScreen", "Error fetching profile photo: $message")
@@ -118,7 +117,7 @@ fun DisplayAlumniJobsScreen(
                 .padding(paddingValues),
             contentAlignment = Alignment.Center // Ensure the loading indicator is centered
         ) {
-            if (isLoading) {
+            if (loading) {
                 CircularProgressIndicator() // Loading indicator works!
             } else {
                 when {

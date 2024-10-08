@@ -1,6 +1,7 @@
 package com.example.istalumniapp.screen
 
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
@@ -78,9 +79,13 @@ import com.example.istalumniapp.nav.Screens
 import com.example.istalumniapp.utils.ProfileViewModel
 
 @Composable
-fun CreateProfileScreen(navController: NavController, profileViewModel: ProfileViewModel,sharedViewModel: SharedViewModel) {
+fun CreateProfileScreen(
+    navController: NavController,
+    profileViewModel: ProfileViewModel,
+    sharedViewModel: SharedViewModel,
+    email: String
+) {
     var fullName by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var location by remember { mutableStateOf("") }
     var currentJob by remember { mutableStateOf("") }
@@ -102,14 +107,6 @@ fun CreateProfileScreen(navController: NavController, profileViewModel: ProfileV
     var extraCourse by remember { mutableStateOf("") }
     var loading by remember { mutableStateOf(false) } // Loading state
 
-
-    // Fetch saved email using LaunchedEffect when the screen loads
-    LaunchedEffect(Unit) {
-        val savedEmail = getEmail(context)
-        if (savedEmail != null) {
-            email = savedEmail
-        }
-    }
 
     // Safe state update using LaunchedEffect
     LaunchedEffect(Unit) {
@@ -153,8 +150,11 @@ fun CreateProfileScreen(navController: NavController, profileViewModel: ProfileV
                 containerColor = colorScheme.onSecondary,  // Background color of the card
                 contentColor = colorScheme.onBackground  // Content color
             ),
-            border = BorderStroke(1.dp, colorScheme.background)  // Optional border color and thickness
-        )  {
+            border = BorderStroke(
+                1.dp,
+                colorScheme.background
+            )  // Optional border color and thickness
+        ) {
 
             StepProgressIndicator(currentStep = currentStep)
 
@@ -173,7 +173,7 @@ fun CreateProfileScreen(navController: NavController, profileViewModel: ProfileV
                     fullName = fullName,
                     onFullNameChange = { fullName = it },
                     email = email,
-                    onEmailChange = { email = it },
+                    onEmailChange = { },
                     phone = phone,
                     onPhoneChange = { phone = it },
                     location = location,
@@ -187,6 +187,7 @@ fun CreateProfileScreen(navController: NavController, profileViewModel: ProfileV
                         }
                     }
                 )
+
                 2 -> ProcedureTwo(
                     currentJob = currentJob,
                     onCurrentJobChange = { currentJob = it },
@@ -209,6 +210,7 @@ fun CreateProfileScreen(navController: NavController, profileViewModel: ProfileV
                         }
                     }
                 )
+
                 3 -> ProcedureThree(
                     degree = degree,
                     onDegreeChange = { degree = it },
@@ -230,6 +232,7 @@ fun CreateProfileScreen(navController: NavController, profileViewModel: ProfileV
                         }
                     }
                 )
+
                 4 -> ProcedureFour(
                     profilePhoto = profilePhotoUri,
                     onSelectPhotoClick = {
@@ -240,7 +243,8 @@ fun CreateProfileScreen(navController: NavController, profileViewModel: ProfileV
                     onPrevious = { currentStep = 3 },
                     onNext = {
                         if (linkedIn.isBlank() || profilePhotoUri == null) {
-                            errorMessage = "Please upload a profile photo and provide your LinkedIn profile URL."
+                            errorMessage =
+                                "Please upload a profile photo and provide your LinkedIn profile URL."
                         } else {
                             errorMessage = ""
                             loading = true // Set loading to true before starting profile creation
@@ -269,8 +273,14 @@ fun CreateProfileScreen(navController: NavController, profileViewModel: ProfileV
                                 context = context,
                                 navController = navController, // Pass the NavController here
                                 onComplete = {
-                                    loading = false // Set loading to false after completion
-                                    navController.navigate(Screens.DashboardScreen.route)
+                                    loading = true
+                                    navController.navigate(Screens.DashboardScreen.route) {
+                                        Toast.makeText(
+                                            context,
+                                            "Profile Created successfully",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
                                 },
                                 onError = { error ->
                                     loading = false
@@ -309,7 +319,7 @@ fun StepProgressIndicator(currentStep: Int) {
         LinearProgressIndicator(
             progress = { progress },
             modifier = Modifier.fillMaxWidth(),
-            color = Color.Blue,
+            color = MaterialTheme.colorScheme.primary,
         )
     }
 }
@@ -367,8 +377,8 @@ fun ProcedureOne(
                 .fillMaxWidth()
                 .padding(vertical = 8.dp),
             value = email,
-            onValueChange = onEmailChange,
-            label = { Text(text = "Email") },
+            onValueChange = {},
+            label = { Text("Email") },
             keyboardOptions = KeyboardOptions.Default.copy(
                 keyboardType = KeyboardType.Email,
                 imeAction = ImeAction.Next
@@ -422,7 +432,6 @@ fun ProcedureOne(
 }
 
 
-
 @Composable
 fun ProcedureTwo(
     currentJob: String,
@@ -442,7 +451,7 @@ fun ProcedureTwo(
     var skillSelectionError by remember { mutableStateOf("") }
     val context = LocalContext.current
     val onSkillSelectedWithLimit = { skill: String ->
-        if (selectedSkills.size >= 5 && !selectedSkills.contains(skill)) {
+        if (selectedSkills.size >= 10 && !selectedSkills.contains(skill)) {
             skillSelectionError = "You can select up to 5 skills only."
         } else {
             onSkillSelected(skill)
@@ -541,9 +550,6 @@ fun ProcedureTwo(
 }
 
 
-
-
-
 @Composable
 fun ProcedureThree(
     degree: DegreeChoice,
@@ -627,7 +633,10 @@ fun ProcedureThree(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 8.dp),
-            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
+            keyboardOptions = KeyboardOptions.Default.copy(
+                keyboardType = KeyboardType.Number,
+                imeAction = ImeAction.Next
+            ),
             isError = graduationYear.isBlank()
         )
 
@@ -639,7 +648,10 @@ fun ProcedureThree(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 8.dp),
-            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done)
+            keyboardOptions = KeyboardOptions.Default.copy(
+                keyboardType = KeyboardType.Text,
+                imeAction = ImeAction.Done
+            )
         )
 
         Spacer(modifier = Modifier.height(24.dp))

@@ -32,35 +32,10 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-
-
-
-
-// Define the DataStore
-private val Context.dataStore by preferencesDataStore(name = "user_preferences")
-
-// Define the key for storing email
-private val EMAIL_KEY = stringPreferencesKey("email")
-
-// Function to save the email
-suspend fun saveEmail(context: Context, email: String) {
-    context.dataStore.edit { preferences ->
-        preferences[EMAIL_KEY] = email
-    }
-}
-
-// Function to retrieve the email
-// Function to retrieve the email, now using flow collection inside the coroutine
-suspend fun getEmail(context: Context): String? {
-    return context.dataStore.data
-        .map { preferences ->
-            preferences[EMAIL_KEY] ?: ""
-        }
-        .firstOrNull() // This collects the flow and returns the first result
-}
 
 
 @Composable
@@ -84,15 +59,6 @@ fun ISTLoginScreen(navController: NavController) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
-    // Only load email if it has been recently saved, not on every app launch
-    LaunchedEffect(Unit) {
-        coroutineScope.launch {
-            val savedEmail = getEmail(context)  // Call the refactored getEmail function
-            if (savedEmail != null) {
-                email = savedEmail
-            }
-        }
-    }
 
     val navigateToDashboard by rememberUpdatedState(newValue = { _: String ->
         navController.navigate(Screens.DashboardScreen.route) {
@@ -102,7 +68,7 @@ fun ISTLoginScreen(navController: NavController) {
     })
 
     val navigateToCreateProfile by rememberUpdatedState(newValue = {
-        navController.navigate(Screens.CreateProfileScreen.route) {
+        navController.navigate("${Screens.CreateProfileScreen.route}/$email") {
             popUpTo(0) { inclusive = true }
         }
     })
@@ -138,9 +104,10 @@ fun ISTLoginScreen(navController: NavController) {
             }
         } else {
             Column(
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .fillMaxSize()
                     .padding(top = 25.dp)
-                    .padding(15.dp)
+                    .padding(20.dp)
             ) {
                 // Move the Image to the top of the screen and increase its size
                 IconButton(onClick = { navController.navigate(Screens.ISTPreviewScreen.route) }) {
@@ -153,7 +120,7 @@ fun ISTLoginScreen(navController: NavController) {
                 Image(
                     modifier = Modifier
                         .align(Alignment.CenterHorizontally)
-                        .size(250.dp),
+                        .size(150.dp),
                     painter = painterResource(R.drawable.ist_logo), // Ensure R.drawable.ist_logo is correct
                     contentDescription = "App Logo"
                 )
@@ -223,7 +190,10 @@ fun ISTLoginScreen(navController: NavController) {
                                 }
                             )
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text(text = "Show Password", color = MaterialTheme.colorScheme.onSurface)
+                            Text(
+                                text = "Show Password",
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
                         }
 
                         Spacer(modifier = Modifier.height(16.dp))
@@ -238,24 +208,35 @@ fun ISTLoginScreen(navController: NavController) {
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        Button(modifier = Modifier.align(Alignment.CenterHorizontally)
-                            .width(250.dp),
+                        Button(
+                            modifier = Modifier
+                                .align(Alignment.CenterHorizontally)
+                                .width(250.dp),
                             onClick = {
                                 if (email.isNotEmpty() && password.isNotEmpty()) {
                                     isLoading = true
                                     signIn(email, password, auth,
-                                        onSuccess = { user ->
-                                            coroutineScope.launch {
-                                                saveEmail(context, email) // Save email after successful login
-                                            }
-                                            fetchUserRoleAndNavigate(auth, navController, navigateToDashboard, navigateToCreateProfile)
+                                        onSuccess = {
+//                                            coroutineScope.launch {
+//                                                saveEmail(context, email) // Save email after successful login
+//                                            }
+                                            fetchUserRoleAndNavigate(
+                                                auth,
+                                                navController, navigateToDashboard,
+                                                navigateToCreateProfile,
+                                                coroutineScope, context
+                                            )
                                         },
                                         onFailure = { error ->
                                             isLoading = false
                                             errorMessage = error
                                         })
                                 } else {
-                                    Toast.makeText(navController.context, "Please enter both email and password", Toast.LENGTH_LONG).show()
+                                    Toast.makeText(
+                                        navController.context,
+                                        "Please enter both email and password",
+                                        Toast.LENGTH_LONG
+                                    ).show()
                                 }
                             },
                             enabled = email.isNotEmpty() && password.isNotEmpty()
@@ -308,7 +289,9 @@ private fun fetchUserRoleAndNavigate(
     auth: FirebaseAuth,
     navController: NavController,
     navigateToDashboard: (String) -> Unit,
-    navigateToCreateProfile: () -> Unit
+    navigateToCreateProfile: () -> Unit,
+    coroutineScope: CoroutineScope,  // Pass coroutine scope from @Composable
+    context: Context
 ) {
     val uid = auth.currentUser?.uid
     if (uid != null) {
@@ -319,11 +302,19 @@ private fun fetchUserRoleAndNavigate(
                 if (role == "admin") {
                     navigateToDashboard("admin")
                 } else {
-                    checkIfProfileExists(uid, navController, navigateToDashboard, navigateToCreateProfile)
+                    checkIfProfileExists(
+                        uid,
+                        navController,
+                        navigateToDashboard,
+                        navigateToCreateProfile,
+                        coroutineScope,
+                        context
+                    )
                 }
             }
             .addOnFailureListener { e ->
-                Toast.makeText(navController.context, "Error fetching user role: ${e.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, "Error fetching user role: ${e.message}", Toast.LENGTH_LONG)
+                    .show()
             }
     }
 }
@@ -332,7 +323,9 @@ private fun checkIfProfileExists(
     uid: String,
     navController: NavController,
     navigateToDashboard: (String) -> Unit,
-    navigateToCreateProfile: () -> Unit
+    navigateToCreateProfile: () -> Unit,
+    coroutineScope: CoroutineScope,  // Pass coroutine scope
+    context: Context
 ) {
     val db = FirebaseFirestore.getInstance()
     db.collection("alumniProfiles").document(uid).get()
@@ -340,10 +333,12 @@ private fun checkIfProfileExists(
             if (documentSnapshot.exists()) {
                 navigateToDashboard("alumni")
             } else {
+
                 navigateToCreateProfile()
             }
         }
         .addOnFailureListener { e ->
-            Toast.makeText(navController.context, "Error checking profile: ${e.message}", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, "Error checking profile: ${e.message}", Toast.LENGTH_LONG)
+                .show()
         }
 }

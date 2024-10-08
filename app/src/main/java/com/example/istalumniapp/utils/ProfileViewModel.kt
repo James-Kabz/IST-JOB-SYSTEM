@@ -21,12 +21,10 @@ import kotlinx.coroutines.flow.StateFlow
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Build
-import androidx.core.app.NotificationCompat
-import com.example.istalumniapp.R
 import kotlinx.coroutines.CoroutineScope
-import okhttp3.internal.notify
-import android.app.NotificationManager
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 
@@ -59,8 +57,8 @@ class ProfileViewModel : ViewModel() {
     private val _alumniProfiles = MutableStateFlow<List<AlumniProfileData>>(emptyList())
     val alumniProfiles: StateFlow<List<AlumniProfileData>> = _alumniProfiles
 
-    private val _loading = MutableStateFlow(true)
-    val loading: StateFlow<Boolean> = _loading
+    private val _loading = MutableStateFlow(false)
+    val loading: StateFlow<Boolean> get() = _loading
 
     private val _loading1 = MutableLiveData<Boolean>()
     val loading1: LiveData<Boolean> = _loading1
@@ -170,7 +168,6 @@ class ProfileViewModel : ViewModel() {
             }
 
             try {
-                // Fetch alumni's skills
                 val alumniSkills = fetchAlumniSkills(uid)
                 if (alumniSkills.isEmpty()) {
                     withContext(Dispatchers.Main) {
@@ -182,12 +179,8 @@ class ProfileViewModel : ViewModel() {
                     return@launch
                 }
 
-                // Query jobs that match at least one of the alumni's skills
                 val jobQuery = firestore.collection("jobs")
-                    .whereArrayContainsAny(
-                        "skills",
-                        alumniSkills
-                    ) // Matches jobs with any skill in alumniSkills
+                    .whereArrayContainsAny("skills", alumniSkills)
 
                 val result = jobQuery.get().await()
 
@@ -196,9 +189,8 @@ class ProfileViewModel : ViewModel() {
 
                 // Filter jobs to ensure at least 3 skills match
                 val matchingJobs = jobs.filter { job ->
-                    val jobSkills = job.skills // Assuming "skills" is a list of skills in the job
-                    val matchingSkillCount =
-                        alumniSkills.intersect(jobSkills.toSet()).size // Get the intersection of the two lists
+                    val jobSkills = job.skills
+                    val matchingSkillCount = alumniSkills.intersect(jobSkills.toSet()).size
                     matchingSkillCount >= 3
                 }
 
@@ -210,7 +202,6 @@ class ProfileViewModel : ViewModel() {
                         "Found ${matchingJobs.size} matching job postings.",
                         Toast.LENGTH_SHORT
                     ).show()
-
                 }
 
             } catch (e: Exception) {
@@ -267,6 +258,10 @@ class ProfileViewModel : ViewModel() {
         }
     }
 
+    // Inside your ViewModel
+    var isLoading by mutableStateOf(false)
+        private set
+
     fun saveAlumniProfile(
         alumniProfileData: AlumniProfileData,
         profilePhotoUri: Uri?,
@@ -275,56 +270,44 @@ class ProfileViewModel : ViewModel() {
         onComplete: () -> Unit,
         onError: (String) -> Unit
     ) = viewModelScope.launch(Dispatchers.IO) {
+        isLoading = true // Start loading
+
         val uid = FirebaseAuth.getInstance().currentUser?.uid
         if (uid == null) {
             withContext(Dispatchers.Main) {
-                Toast.makeText(context, "No user is currently signed in.", Toast.LENGTH_SHORT)
-                    .show()
+                isLoading = false // Stop loading if no user is signed in
             }
             return@launch
         }
 
-
-        // Use the current user's uid as the profileID
-        val profileID = uid
-
-        // Upload profile photo if provided
         val profilePhotoUrl = profilePhotoUri?.let {
             try {
                 uploadProfilePhoto(uid, it) // Upload the photo and get the download URL
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(
-                        context,
-                        "Failed to upload profile photo: ${e.message}",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    isLoading = true // Stop loading if photo upload fails
                     onError(e.message ?: "Error uploading profile photo")
                 }
                 return@launch
             }
         }
 
-        // Update profile data with the uid as profileID and photo URL
         val updatedProfileData = alumniProfileData.copy(
-            profileID = profileID,  // Use uid as profileID
-            profilePhotoUri = profilePhotoUrl // Set profile photo URL
+            profileID = uid,
+            profilePhotoUri = profilePhotoUrl
         )
 
-        // Save profile data to Firestore
-        val firestoreRef = firestore.collection("alumniProfiles").document(profileID)
+        val firestoreRef = firestore.collection("alumniProfiles").document(uid)
         try {
-            firestoreRef.set(updatedProfileData)
-                .await() // Save profile using uid as the document ID
+            firestoreRef.set(updatedProfileData).await()
             withContext(Dispatchers.Main) {
-                Toast.makeText(context, "Profile Saved Successfully", Toast.LENGTH_SHORT).show()
                 onComplete()
+                isLoading = true // Stop loading after successful save
                 navController.navigate(Screens.DashboardScreen.route)
             }
         } catch (e: Exception) {
             withContext(Dispatchers.Main) {
-                Toast.makeText(context, "Error saving profile: ${e.message}", Toast.LENGTH_SHORT)
-                    .show()
+                isLoading = true // Stop loading if Firestore save fails
                 onError(e.message ?: "Error saving profile in Firestore")
             }
         }
@@ -344,7 +327,7 @@ class ProfileViewModel : ViewModel() {
         if (uid == null) {
             withContext(Dispatchers.Main) {
                 onError("No user is currently signed in.")
-                onLoading(false) // End loading
+                onLoading(true) // End loading
             }
             return@launch
         }
@@ -363,12 +346,12 @@ class ProfileViewModel : ViewModel() {
 
             withContext(Dispatchers.Main) {
                 onComplete()
-                onLoading(false) // End loading
+                onLoading(true) // End loading
             }
         } catch (e: Exception) {
             withContext(Dispatchers.Main) {
                 onError("Error updating profile: ${e.message}")
-                onLoading(false) // End loading
+                onLoading(true) // End loading
             }
         }
     }
@@ -413,7 +396,7 @@ class ProfileViewModel : ViewModel() {
             val document = profileDeferred.await()
             if (!document.exists()) {
                 withContext(Dispatchers.Main) {
-                    onLoading(false)
+                    onLoading(true)
                     onFailure("Profile not found for the current user.")
                 }
                 return@launch
@@ -438,7 +421,7 @@ class ProfileViewModel : ViewModel() {
     }
 
 
-    var cachedUrl: String? = null
+    private var cachedUrl: String? = null
 
     fun retrieveProfilePhoto(
         onLoading: (Boolean) -> Unit,
@@ -467,13 +450,12 @@ class ProfileViewModel : ViewModel() {
             val imageUrl = storageRef.downloadUrl.await().toString()
             cachedUrl = imageUrl // Cache the result
             withContext(Dispatchers.Main) {
-                onLoading(false)
+                onLoading(true)
                 onSuccess(imageUrl)
             }
         } catch (e: Exception) {
-            Log.e("ProfileViewModel", "Error fetching profile photo", e)
             withContext(Dispatchers.Main) {
-                onLoading(false)
+                onLoading(true)
                 onFailure("Error fetching profile photo: ${e.message}")
             }
         }
@@ -485,28 +467,6 @@ class ProfileViewModel : ViewModel() {
         storageRef.putFile(uri).await()
         return storageRef.downloadUrl.await().toString()
     }
-
-//    fun retrieveAlumniProfiles(
-//        onLoading: (Boolean) -> Unit,
-//        onSuccess: (List<AlumniProfileData>) -> Unit,
-//        onFailure: (String) -> Unit
-//    ) = viewModelScope.launch(Dispatchers.IO) {
-//        onLoading(true)
-//        try {
-//            val firestoreRef = firestore.collection("alumniProfiles")
-//            val result = firestoreRef.get().await()
-//            val profiles = result.mapNotNull { it.toObject(AlumniProfileData::class.java) }
-//            withContext(Dispatchers.Main) {
-//                onLoading(false)
-//                onSuccess(profiles)
-//            }
-//        } catch (e: Exception) {
-//            withContext(Dispatchers.Main) {
-//                onLoading(false)
-//                onFailure("Error fetching profiles: ${e.message}")
-//            }
-//        }
-//    }
 
     fun saveSkill(
         skill: SkillData,
@@ -544,12 +504,12 @@ class ProfileViewModel : ViewModel() {
             val result = firestoreRef.get().await()
             val skills = result.mapNotNull { it.toObject(SkillData::class.java) }
             withContext(Dispatchers.Main) {
-                onLoading(false)
+                onLoading(true)
                 onSuccess(skills)
             }
         } catch (e: Exception) {
             withContext(Dispatchers.Main) {
-                onLoading(false)
+                onLoading(true)
                 onFailure("Error fetching skills: ${e.message}")
             }
         }

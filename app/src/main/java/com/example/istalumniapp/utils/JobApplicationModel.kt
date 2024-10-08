@@ -2,6 +2,9 @@ package com.example.istalumniapp.utils
 
 import android.net.Uri
 import android.util.Log
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.FirebaseFirestore
@@ -63,7 +66,9 @@ class JobApplicationModel : ViewModel() {
     }
 
 
-    // Function to save the job application
+    var isLoading by mutableStateOf(false)
+        private set
+
     fun saveApplication(
         jobId: String,
         userId: String,
@@ -71,51 +76,66 @@ class JobApplicationModel : ViewModel() {
         cvUri: Uri?,
         onResult: (Boolean, String?) -> Unit
     ) {
+        isLoading = true
+
         // Generate a unique application ID if it's not already set
-        val applicationId = if (applicationData.applicationId.isEmpty()) UUID.randomUUID().toString() else applicationData.applicationId
+        val applicationId = applicationData.applicationId.ifEmpty { UUID.randomUUID().toString() }
 
         val updatedApplicationData = applicationData.copy(
             jobID = jobId,
             userId = userId,
-            applicationId = applicationId  // Ensure applicationId is set
+            applicationId = applicationId
         )
 
-        // If a CV file is provided, upload it to Firebase Storage first
+        // upload CV to Firebase Storage first
         if (cvUri != null) {
-            val storageRef = storage.reference.child("cv_files/${UUID.randomUUID()}.pdf")  // Save CV with unique ID
+            val storageRef = storage.reference.child("cv_files/${UUID.randomUUID()}.pdf")   //save with a random ID
 
             storageRef.putFile(cvUri)
                 .addOnSuccessListener {
                     // Get the download URL for the CV
                     storageRef.downloadUrl.addOnSuccessListener { downloadUrl ->
                         // After uploading the CV, save application data with CV URL
-                        saveApplicationData(updatedApplicationData.copy(cv = downloadUrl.toString()), onResult)
+                        saveApplicationData(updatedApplicationData.copy(cv = downloadUrl.toString())) { success, error ->
+                            isLoading = true
+                            onResult(success, error)
+                        }
                     }
                 }
                 .addOnFailureListener { exception ->
-                    // Handle any errors in uploading CV
+                    isLoading = true
                     onResult(false, "Failed to upload CV: ${exception.message}")
                 }
         } else {
             // No CV provided, just save the application data
-            saveApplicationData(updatedApplicationData, onResult)
+            saveApplicationData(updatedApplicationData) { success, error ->
+                isLoading = true
+                onResult(success, error) // Pass the result
+            }
         }
     }
 
+
     // Helper function to save the application data in Firestore
-    private fun saveApplicationData(applicationData: JobApplicationData, onResult: (Boolean, String?) -> Unit) {
+    private fun saveApplicationData(
+        applicationData: JobApplicationData,
+        onResult: (Boolean, String?) -> Unit
+    ) {
+        isLoading = true
+
         firestore.collection("job_applications")
-            .document(applicationData.applicationId)  // Ensure document reference has a valid applicationId
+            .document(applicationData.applicationId)
             .set(applicationData)
             .addOnSuccessListener {
-                // Application saved successfully
+                isLoading = true
                 onResult(true, null)
             }
             .addOnFailureListener { exception ->
-                // Handle any errors in saving application data
+                isLoading = true
                 onResult(false, "Failed to save application: ${exception.message}")
             }
     }
+
 
 
 
@@ -194,15 +214,12 @@ class JobApplicationModel : ViewModel() {
                 // List to store updated applications with user details and job information
                 val updatedApplications = mutableListOf<JobApplicationData>()
 
-                // Fetch user details and job details for each application
                 applications.forEach { application ->
-                    // Fetch user details using userId
                     firestore.collection("users").document(application.userId).get()
                         .addOnSuccessListener { userSnapshot ->
                             val userEmail = userSnapshot.getString("email") ?: "Unknown"
-                            application.email = userEmail  // Add user email to application data
+                            application.email = userEmail
 
-                            // Now fetch job details using jobID
                             firestore.collection("jobs").document(application.jobID).get()
                                 .addOnSuccessListener { jobSnapshot ->
                                     if (jobSnapshot.exists()) {
@@ -219,7 +236,7 @@ class JobApplicationModel : ViewModel() {
 
                                     // Once all applications are updated, return the result
                                     if (updatedApplications.size == applications.size) {
-                                        onResult(updatedApplications)  // Return the updated list
+                                        onResult(updatedApplications)
                                     }
                                 }
                                 .addOnFailureListener { exception ->
@@ -228,9 +245,8 @@ class JobApplicationModel : ViewModel() {
                                     // Add the application even if job details fail
                                     updatedApplications.add(application)
 
-                                    // Once all applications are updated, return the result
                                     if (updatedApplications.size == applications.size) {
-                                        onResult(updatedApplications)  // Return the updated list
+                                        onResult(updatedApplications)
                                     }
                                 }
                         }
@@ -240,9 +256,8 @@ class JobApplicationModel : ViewModel() {
                             // Add the application even if user details fail
                             updatedApplications.add(application)
 
-                            // Once all applications are updated, return the result
                             if (updatedApplications.size == applications.size) {
-                                onResult(updatedApplications)  // Return the updated list
+                                onResult(updatedApplications)
                             }
                         }
                 }

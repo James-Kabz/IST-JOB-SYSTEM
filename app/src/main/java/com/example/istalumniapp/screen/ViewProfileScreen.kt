@@ -180,15 +180,13 @@ fun ProfileDetails(
             modifier = Modifier.fillMaxWidth()
         ) {
             // Profile image
-            ProfileImage(profile.profilePhotoUri ?: "", modifier = Modifier.padding(end = 50.dp))
-
-//            Spacer(modifier = Modifier.padding(end = 40.dp))
+            ProfileImage(profile.profilePhotoUri ?: "")
 
             // Profile name and details
             Column(horizontalAlignment = Alignment.End) {
                 Text(
                     text = profile.fullName,
-                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.padding(top = 8.dp)
                 )
@@ -196,7 +194,7 @@ fun ProfileDetails(
                     Icon(imageVector = Icons.Default.LocationOn, contentDescription = "Location")
                     Text(
                         text = profile.location,
-                        style = MaterialTheme.typography.bodyLarge,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = Color.Gray,
                         modifier = Modifier.padding(top = 4.dp)
                     )
@@ -420,8 +418,8 @@ fun ProfileImage(profileUrl: String, modifier: Modifier = Modifier) {
         contentDescription = "Profile Photo",
         contentScale = ContentScale.Crop,
         modifier = Modifier
-            .size(120.dp)
+            .size(100.dp)
             .clip(CircleShape)
-            .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
+            .border(2.dp, MaterialTheme.colorScheme.onPrimary, CircleShape)
     )
 }

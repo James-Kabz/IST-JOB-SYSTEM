@@ -369,8 +369,6 @@ fun AlumniDashboardCards(
 }
 
 
-
-
 @Composable
 fun DashboardCard2(
     title: String,
@@ -464,6 +462,7 @@ fun AdminTopBar(navController: NavController, onLogoutClick: () -> Unit) {
             IconButton(onClick = { }) {
                 Icon(Icons.Default.Person, contentDescription = "Profile")
             }
+
         },
         actions = {
             IconButton(
@@ -568,6 +567,7 @@ fun DashboardTopBar(
 //        else -> DefaultTopBar(navController = navController, onLogoutClick = onLogoutClick) // If needed, provide a default top bar
     }
 }
+
 @Composable
 fun AlumniDashboard(navController: NavController, notificationViewModel: NotificationViewModel) {
     val currentDestination = navController.currentBackStackEntryAsState().value?.destination?.route
@@ -680,7 +680,7 @@ fun AdminDashboard(navController: NavController) {
                     modifier = Modifier.size(40.dp)
                 )
             },
-            label = { Text(text = "Application") },
+            label = { Text(text = "Applications") },
             selected = currentDestination == Screens.ViewApplicationsScreen.route,
             onClick = { navController.navigate(Screens.ViewApplicationsScreen.route) },
             colors = NavigationBarItemDefaults.colors(
@@ -711,24 +711,6 @@ fun AdminDashboard(navController: NavController) {
             )
         )
 
-        NavigationBarItem(
-            icon = {
-                Icon(
-                    Icons.Filled.AddToPhotos,
-                    contentDescription = "Create Job",
-                    modifier = Modifier.size(40.dp)
-                )
-            },
-            label = { Text(text = "Create Job") },
-            selected = currentDestination == Screens.AddJobScreen.route,
-            onClick = { navController.navigate(Screens.AddJobScreen.route) },
-            colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = MaterialTheme.colorScheme.onBackground,
-                unselectedIconColor = Color.Gray,
-                selectedTextColor = MaterialTheme.colorScheme.onBackground,
-                unselectedTextColor = Color.Gray
-            )
-        )
 
         // Jobs Button with Icon and Text
         NavigationBarItem(
